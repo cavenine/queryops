@@ -29,3 +29,4 @@ web/resources/static/index.css
 
 # ...even if they are in subdirectories
 !*/
+.osgrep
