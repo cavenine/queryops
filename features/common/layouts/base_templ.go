@@ -9,8 +9,8 @@ import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
 import (
-	"northstar/config"
-	"northstar/web/resources"
+	"queryops/config"
+	"queryops/web/resources"
 )
 
 func Base(title string) templ.Component {

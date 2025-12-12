@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"time"
 
-	"northstar/features/index/components"
+	"queryops/features/index/components"
 
 	"github.com/delaneyj/toolbelt"
 	"github.com/delaneyj/toolbelt/embeddednats"

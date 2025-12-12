@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"northstar/features/monitor/pages"
+	"queryops/features/monitor/pages"
 
 	"github.com/dustin/go-humanize"
 	"github.com/starfederation/datastar-go/datastar"

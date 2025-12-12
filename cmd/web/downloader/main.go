@@ -6,9 +6,9 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
-	"northstar/web/resources"
 	"os"
 	"path/filepath"
+	"queryops/web/resources"
 	"sync"
 )
 

@@ -3,7 +3,7 @@ package reverse
 import (
 	"net/http"
 
-	"northstar/features/reverse/pages"
+	"queryops/features/reverse/pages"
 
 	"github.com/go-chi/chi/v5"
 )

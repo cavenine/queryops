@@ -3,7 +3,7 @@ package sortable
 import (
 	"net/http"
 
-	"northstar/features/sortable/pages"
+	"queryops/features/sortable/pages"
 
 	"github.com/go-chi/chi/v5"
 )

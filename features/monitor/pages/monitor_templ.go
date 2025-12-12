@@ -10,8 +10,8 @@ import templruntime "github.com/a-h/templ/runtime"
 
 import (
 	"github.com/starfederation/datastar-go/datastar"
-	"northstar/features/common/components"
-	"northstar/features/common/layouts"
+	"queryops/features/common/components"
+	"queryops/features/common/layouts"
 )
 
 type SystemMonitorSignals struct {

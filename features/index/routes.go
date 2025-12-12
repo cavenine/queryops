@@ -1,7 +1,7 @@
 package index
 
 import (
-	"northstar/features/index/services"
+	"queryops/features/index/services"
 
 	"github.com/delaneyj/toolbelt/embeddednats"
 	"github.com/go-chi/chi/v5"

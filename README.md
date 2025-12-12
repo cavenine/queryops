@@ -1,4 +1,4 @@
-# NORTHSTAR
+# QUERYOPS
 
 # Stack
 
@@ -13,7 +13,7 @@
 1. Clone this repository
 
 ```shell
-git clone https://github.com/zangster300/northstar.git
+git clone https://github.com/yourusername/queryops.git
 ```
 
 2. Install Dependencies
@@ -75,10 +75,10 @@ The `task build` [task](./Taskfile.yml#L33) will assemble and build a binary
 
 ```shell
 # build an image
-docker build -t northstar:latest .
+docker build -t queryops:latest .
 
 # run the image in a container
-docker run --name northstar -p 8080:9001 northstar:latest
+docker run --name queryops -p 8080:9001 queryops:latest
 ```
 
 [Dockerfile](./Dockerfile)

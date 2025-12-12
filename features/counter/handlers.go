@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"sync/atomic"
 
-	"northstar/features/counter/pages"
+	"queryops/features/counter/pages"
 
 	"github.com/Jeffail/gabs/v2"
 	"github.com/gorilla/sessions"

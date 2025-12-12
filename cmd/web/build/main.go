@@ -7,10 +7,10 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-	"northstar/config"
-	"northstar/web/resources"
 	"os"
 	"os/signal"
+	"queryops/config"
+	"queryops/web/resources"
 	"syscall"
 
 	"github.com/evanw/esbuild/pkg/api"

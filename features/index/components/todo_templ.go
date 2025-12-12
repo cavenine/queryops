@@ -11,7 +11,7 @@ import templruntime "github.com/a-h/templ/runtime"
 import (
 	"fmt"
 	"github.com/starfederation/datastar-go/datastar"
-	common "northstar/features/common/components"
+	common "queryops/features/common/components"
 )
 
 type TodoViewMode int

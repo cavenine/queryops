@@ -9,9 +9,9 @@ import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
 import (
-	"northstar/features/common/components"
-	"northstar/features/common/layouts"
-	"northstar/web/resources"
+	"queryops/features/common/components"
+	"queryops/features/common/layouts"
+	"queryops/web/resources"
 )
 
 func SortablePage() templ.Component {

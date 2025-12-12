@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"strconv"
 
-	"northstar/features/index/components"
-	"northstar/features/index/pages"
-	"northstar/features/index/services"
+	"queryops/features/index/components"
+	"queryops/features/index/pages"
+	"queryops/features/index/services"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/starfederation/datastar-go/datastar"
@@ -24,7 +24,7 @@ func NewHandlers(todoService *services.TodoService) *Handlers {
 }
 
 func (h *Handlers) IndexPage(w http.ResponseWriter, r *http.Request) {
-	if err := pages.IndexPage("Northstar").Render(r.Context(), w); err != nil {
+	if err := pages.IndexPage("QueryOps").Render(r.Context(), w); err != nil {
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 	}
 }
