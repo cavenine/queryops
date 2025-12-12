@@ -1,4 +1,4 @@
-package main
+package web
 
 import (
 	"context"
@@ -6,34 +6,34 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
-	"os"
-	"os/signal"
-	"queryops/config"
-	"queryops/nats"
-	"queryops/router"
-	"syscall"
 	"time"
+
+	"queryops/background"
+	"queryops/config"
+	"queryops/db"
+	"queryops/migrations"
+	"queryops/router"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/gorilla/sessions"
+	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
 )
 
-func main() {
-
-	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
-	defer cancel()
-
-	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
-		Level: config.Global.LogLevel,
-	}))
-	slog.SetDefault(logger)
-
-	if err := run(ctx); err != nil && err != http.ErrServerClosed {
-		slog.Error("error running server", "error", err)
-		os.Exit(1)
+func NewCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "web",
+		Short: "Run the web server",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx := cmd.Context()
+			if err := run(ctx); err != nil && err != http.ErrServerClosed {
+				return err
+			}
+			return nil
+		},
 	}
+	return cmd
 }
 
 func run(ctx context.Context) error {
@@ -42,7 +42,39 @@ func run(ctx context.Context) error {
 	slog.Info("server started", "addr", addr)
 	defer slog.Info("server shutdown complete")
 
+	if config.Global.AutoMigrate {
+		if config.Global.DatabaseURL == "" {
+			return fmt.Errorf("AUTO_MIGRATE is true but DATABASE_URL is empty")
+		}
+		slog.Info("running automatic database migrations")
+		if err := migrations.Up(config.Global.DatabaseURL); err != nil {
+			return fmt.Errorf("running automatic migrations: %w", err)
+		}
+
+		// Always run River migrations alongside application migrations.
+		if err := background.MigrateRiver(ctx, config.Global); err != nil {
+			return fmt.Errorf("running river migrations: %w", err)
+		}
+	}
+
 	eg, egctx := errgroup.WithContext(ctx)
+
+	pool, err := db.NewPool(egctx, config.Global)
+	if err != nil {
+		return fmt.Errorf("creating database pool: %w", err)
+	}
+	defer pool.Close()
+
+	if config.Global.BackgroundProcessing && config.Global.Environment == config.Dev {
+		clientCfg := background.DefaultClientConfig()
+		eg.Go(func() error {
+			slog.Info("starting in-process river workers")
+			if err := background.RunWorker(egctx, pool, clientCfg); err != nil && err != context.Canceled {
+				return fmt.Errorf("river client error: %w", err)
+			}
+			return nil
+		})
+	}
 
 	r := chi.NewMux()
 	r.Use(
@@ -57,12 +89,7 @@ func run(ctx context.Context) error {
 	sessionStore.Options.Secure = false
 	sessionStore.Options.SameSite = http.SameSiteLaxMode
 
-	ns, err := nats.SetupNATS(ctx)
-	if err != nil {
-		return err
-	}
-
-	if err := router.SetupRoutes(egctx, r, sessionStore, ns); err != nil {
+	if err := router.SetupRoutes(egctx, r, sessionStore, pool); err != nil {
 		return fmt.Errorf("error setting up routes: %w", err)
 	}
 

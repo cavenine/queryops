@@ -2,52 +2,26 @@ package services
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
-	"time"
 
 	"queryops/features/index/components"
 
 	"github.com/delaneyj/toolbelt"
-	"github.com/delaneyj/toolbelt/embeddednats"
 	"github.com/gorilla/sessions"
-	"github.com/nats-io/nats.go/jetstream"
 	"github.com/samber/lo"
 )
 
 type TodoService struct {
-	kv    jetstream.KeyValue
+	repo  *TodoRepository
 	store sessions.Store
 }
 
-func NewTodoService(ns *embeddednats.Server, store sessions.Store) (*TodoService, error) {
-	nc, err := ns.Client()
-	if err != nil {
-		return nil, fmt.Errorf("error creating nats client: %w", err)
-	}
-
-	js, err := jetstream.New(nc)
-	if err != nil {
-		return nil, fmt.Errorf("error creating jetstream client: %w", err)
-	}
-
-	kv, err := js.CreateOrUpdateKeyValue(context.Background(), jetstream.KeyValueConfig{
-		Bucket:      "todos",
-		Description: "Datastar Todos",
-		Compression: true,
-		TTL:         time.Hour,
-		MaxBytes:    16 * 1024 * 1024,
-	})
-
-	if err != nil {
-		return nil, fmt.Errorf("error creating key value: %w", err)
-	}
-
+func NewTodoService(repo *TodoRepository, store sessions.Store) *TodoService {
 	return &TodoService{
-		kv:    kv,
+		repo:  repo,
 		store: store,
-	}, nil
+	}
 }
 
 func (s *TodoService) GetSessionMVC(w http.ResponseWriter, r *http.Request) (string, *components.TodoMVC, error) {
@@ -57,21 +31,20 @@ func (s *TodoService) GetSessionMVC(w http.ResponseWriter, r *http.Request) (str
 		return "", nil, fmt.Errorf("failed to get session id: %w", err)
 	}
 
-	mvc := &components.TodoMVC{}
-	if entry, err := s.kv.Get(ctx, sessionID); err != nil {
-		if err != jetstream.ErrKeyNotFound {
-			return "", nil, fmt.Errorf("failed to get key value: %w", err)
-		}
+	mvc, err := s.repo.GetMVC(ctx, sessionID)
+	if err != nil {
+		return "", nil, fmt.Errorf("failed to get todo mvc: %w", err)
+	}
+
+	if mvc == nil {
+		mvc = &components.TodoMVC{}
 		s.resetMVC(mvc)
 
 		if err := s.saveMVC(ctx, sessionID, mvc); err != nil {
 			return "", nil, fmt.Errorf("failed to save mvc: %w", err)
 		}
-	} else {
-		if err := json.Unmarshal(entry.Value(), mvc); err != nil {
-			return "", nil, fmt.Errorf("failed to unmarshal mvc: %w", err)
-		}
 	}
+
 	return sessionID, mvc, nil
 }
 
@@ -79,12 +52,17 @@ func (s *TodoService) SaveMVC(ctx context.Context, sessionID string, mvc *compon
 	return s.saveMVC(ctx, sessionID, mvc)
 }
 
-func (s *TodoService) ResetMVC(mvc *components.TodoMVC) {
-	s.resetMVC(mvc)
+// GetMVCBySessionID loads the current MVC state for a session without modifying it.
+func (s *TodoService) GetMVCBySessionID(ctx context.Context, sessionID string) (*components.TodoMVC, error) {
+	mvc, err := s.repo.GetMVC(ctx, sessionID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get todo mvc: %w", err)
+	}
+	return mvc, nil
 }
 
-func (s *TodoService) WatchUpdates(ctx context.Context, sessionID string) (jetstream.KeyWatcher, error) {
-	return s.kv.Watch(ctx, sessionID)
+func (s *TodoService) ResetMVC(mvc *components.TodoMVC) {
+	s.resetMVC(mvc)
 }
 
 func (s *TodoService) ToggleTodo(mvc *components.TodoMVC, index int) {
@@ -140,12 +118,8 @@ func (s *TodoService) CancelEditing(mvc *components.TodoMVC) {
 }
 
 func (s *TodoService) saveMVC(ctx context.Context, sessionID string, mvc *components.TodoMVC) error {
-	b, err := json.Marshal(mvc)
-	if err != nil {
-		return fmt.Errorf("failed to marshal mvc: %w", err)
-	}
-	if _, err := s.kv.Put(ctx, sessionID, b); err != nil {
-		return fmt.Errorf("failed to put key value: %w", err)
+	if err := s.repo.SaveMVC(ctx, sessionID, mvc); err != nil {
+		return fmt.Errorf("failed to persist mvc: %w", err)
 	}
 	return nil
 }

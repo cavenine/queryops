@@ -1,9 +1,11 @@
 package index
 
 import (
+	"bytes"
 	"encoding/json"
 	"net/http"
 	"strconv"
+	"time"
 
 	"queryops/features/index/components"
 	"queryops/features/index/pages"
@@ -37,33 +39,58 @@ func (h *Handlers) TodosSSE(w http.ResponseWriter, r *http.Request) {
 	}
 
 	sse := datastar.NewSSE(w, r)
-
-	// Watch for updates
 	ctx := r.Context()
-	watcher, err := h.todoService.WatchUpdates(ctx, sessionID)
+
+	send := func(state *components.TodoMVC) error {
+		c := components.TodosMVCView(state)
+		if err := sse.PatchElementTempl(c); err != nil {
+			if err := sse.ConsoleError(err); err != nil {
+				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			}
+			return err
+		}
+		return nil
+	}
+
+	// send initial state
+	if err := send(mvc); err != nil {
+		return
+	}
+
+	last, err := json.Marshal(mvc)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	defer watcher.Stop()
+
+	ticker := time.NewTicker(time.Second)
+	defer ticker.Stop()
 
 	for {
 		select {
 		case <-ctx.Done():
 			return
-		case entry := <-watcher.Updates():
-			if entry == nil {
-				continue
-			}
-			if err := json.Unmarshal(entry.Value(), mvc); err != nil {
+		case <-ticker.C:
+			current, err := h.todoService.GetMVCBySessionID(ctx, sessionID)
+			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
-			c := components.TodosMVCView(mvc)
-			if err := sse.PatchElementTempl(c); err != nil {
-				if err := sse.ConsoleError(err); err != nil {
-					http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-				}
+			if current == nil {
+				continue
+			}
+
+			b, err := json.Marshal(current)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			if bytes.Equal(b, last) {
+				continue
+			}
+			last = b
+
+			if err := send(current); err != nil {
 				return
 			}
 		}

@@ -15,13 +15,13 @@ import (
 	sortableFeature "queryops/features/sortable"
 	"queryops/web/resources"
 
-	"github.com/delaneyj/toolbelt/embeddednats"
 	"github.com/go-chi/chi/v5"
 	"github.com/gorilla/sessions"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/starfederation/datastar-go/datastar"
 )
 
-func SetupRoutes(ctx context.Context, router chi.Router, sessionStore *sessions.CookieStore, ns *embeddednats.Server) (err error) {
+func SetupRoutes(ctx context.Context, router chi.Router, sessionStore *sessions.CookieStore, pool *pgxpool.Pool) (err error) {
 
 	if config.Global.Environment == config.Dev {
 		setupReload(router)
@@ -30,7 +30,7 @@ func SetupRoutes(ctx context.Context, router chi.Router, sessionStore *sessions.
 	router.Handle("/static/*", resources.Handler())
 
 	if err := errors.Join(
-		indexFeature.SetupRoutes(router, sessionStore, ns),
+		indexFeature.SetupRoutes(router, sessionStore, pool),
 		counterFeature.SetupRoutes(router, sessionStore),
 		monitorFeature.SetupRoutes(router),
 		sortableFeature.SetupRoutes(router),

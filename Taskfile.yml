@@ -32,7 +32,7 @@ tasks:
 
   build:
     cmds:
-      - go build -tags=prod -o bin/main ./cmd/web
+      - go build -tags=prod -o bin/main ./cmd
     deps:
       - build:templ
       - build:styles
@@ -48,7 +48,7 @@ tasks:
   # Use this task to download latest version of client libs
   download:
     cmds:
-      - go run cmd/downloader/main.go
+      - go run cmd/web/downloader/main.go
 
   # The `live:` tasks below are used together for development builds and will live-reload the server
   live:templ:
@@ -67,8 +67,9 @@ tasks:
     cmds:
       - |
         go tool air  \
-         -build.cmd "go build -tags=dev -o tmp/bin/main ./cmd/web" \
+         -build.cmd "go build -tags=dev -o tmp/bin/main ./cmd" \
          -build.bin "tmp/bin/main" \
+         -build.args_bin "web" \
          -build.exclude_dir "data,node_modules,web/resources/libs/datastar/node_modules,web/resources/libs/lit/node_modules" \
          -build.include_ext "go,templ" \
          -misc.clean_on_exit "true"
@@ -82,7 +83,37 @@ tasks:
 
   run:
     cmds:
-      - ./bin/main
+      - ./bin/main web
+    deps:
+      - build
+
+  migrate:
+    cmds:
+      - ./bin/main migrate up
+    deps:
+      - build
+
+  migrate:down:
+    cmds:
+      - ./bin/main migrate down --steps 1
+    deps:
+      - build
+
+  migrate:version:
+    cmds:
+      - ./bin/main migrate version
+    deps:
+      - build
+
+  migrate:to:
+    cmds:
+      - ./bin/main migrate to {{.VERSION}}
+    deps:
+      - build
+
+  migrate:force:
+    cmds:
+      - ./bin/main migrate force {{.VERSION}}
     deps:
       - build
 

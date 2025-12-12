@@ -3,16 +3,14 @@ package index
 import (
 	"queryops/features/index/services"
 
-	"github.com/delaneyj/toolbelt/embeddednats"
 	"github.com/go-chi/chi/v5"
 	"github.com/gorilla/sessions"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-func SetupRoutes(router chi.Router, store sessions.Store, ns *embeddednats.Server) error {
-	todoService, err := services.NewTodoService(ns, store)
-	if err != nil {
-		return err
-	}
+func SetupRoutes(router chi.Router, store sessions.Store, pool *pgxpool.Pool) error {
+	repo := services.NewTodoRepository(pool)
+	todoService := services.NewTodoService(repo, store)
 
 	handlers := NewHandlers(todoService)
 
