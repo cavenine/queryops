@@ -4,6 +4,8 @@ env:
   NATS_PORT: 4222
   STATIC_DIR: "web/resources/static"
   GOEXPERIMENT: "greenteagc,jsonv2"
+  GHCR_IMAGE: "ghcr.io/cavenine/queryops"
+  GHCR_USERNAME: "cavenine"
 
 tasks:
   # The `build:` tasks below are used together for production builds of a project
@@ -38,6 +40,24 @@ tasks:
       - build:templ
       - build:styles
       - build:wc
+
+  ghcr:login:
+    desc: Login to GitHub Container Registry
+    cmds:
+      - echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USERNAME" --password-stdin
+    preconditions:
+      - sh: test -n "$GHCR_TOKEN"
+        msg: GHCR_TOKEN is required (classic PAT with write:packages)
+
+  ghcr:publish:
+    desc: Build and push image to GHCR
+    deps:
+      - ghcr:login
+    vars:
+      GIT_SHA:
+        sh: git rev-parse --short HEAD
+    cmds:
+      - docker buildx build --platform linux/amd64 --tag "$GHCR_IMAGE:latest" --tag "$GHCR_IMAGE:dev-{{.GIT_SHA}}" --push .
 
   # Use this task to debug with the delve debugger
   debug:

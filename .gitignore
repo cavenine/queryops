@@ -20,6 +20,10 @@
 !README.md
 !LICENSE
 
+# GitHub Actions workflows
+!.github/workflows/*.yml
+!.github/workflows/*.yaml
+
 !web/**/*
 
 web/resources/static/libs/*
