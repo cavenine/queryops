@@ -1,0 +1,61 @@
+package pages
+
+import "queryops/features/common/layouts"
+
+templ RegisterPage(email, errorMsg string) {
+	@layouts.Base("Register") {
+		<div class="flex flex-1 items-center justify-center bg-base-200">
+			<div class="card w-full max-w-md bg-base-100 shadow-xl border border-base-300/40">
+				<div class="card-body gap-4">
+					<div class="flex items-center justify-center gap-2">
+						<iconify-icon icon="mdi:console" class="text-primary text-2xl" noobserver></iconify-icon>
+						<span class="font-mono text-lg tracking-wide">QueryOps</span>
+					</div>
+					<h2 class="card-title justify-center text-2xl font-semibold tracking-tight">Create Account</h2>
+					if errorMsg != "" {
+						<div class="alert alert-error" role="alert">
+							<span>{ errorMsg }</span>
+						</div>
+					}
+					<form method="POST" action="/register" class="space-y-4">
+						<div class="form-control">
+							<label class="label" for="email">
+								<span class="label-text">Email</span>
+							</label>
+							<input
+								type="email"
+								id="email"
+								name="email"
+								value={ email }
+								class="input input-bordered w-full"
+								placeholder="you@example.com"
+								required
+							/>
+						</div>
+						<div class="form-control">
+							<label class="label" for="password">
+								<span class="label-text">Password</span>
+							</label>
+							<input
+								type="password"
+								id="password"
+								name="password"
+								class="input input-bordered w-full"
+								placeholder="Choose a password"
+								required
+							/>
+						</div>
+						<div class="form-control mt-6">
+							<button type="submit" class="btn btn-primary w-full">Register</button>
+						</div>
+					</form>
+					<div class="divider">OR</div>
+					<p class="text-center text-sm">
+						Already have an account?
+						<a href="/login" class="link link-primary">Login</a>
+					</p>
+				</div>
+			</div>
+		</div>
+	}
+}

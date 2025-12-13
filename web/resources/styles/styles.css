@@ -10,11 +10,12 @@
 
 @plugin "./daisyui/daisyui-theme.js" {
     name: "datastar";
+    default: true;
 
     --color-base-100: "#0b1325";
     --color-base-200: "#1e304a";
     --color-base-300: "#3a506b";
-    --color-primary: "#c9a75f";
+    --color-primary: "#6366f1";
     --color-secondary: "#bfdbfe";
     --color-accent: "#7dd3fc";
     --color-neutral: "#444";

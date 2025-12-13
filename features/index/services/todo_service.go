@@ -3,33 +3,30 @@ package services
 import (
 	"context"
 	"fmt"
-	"net/http"
 
 	"queryops/features/index/components"
 
+	"github.com/alexedwards/scs/v2"
 	"github.com/delaneyj/toolbelt"
-	"github.com/gorilla/sessions"
 	"github.com/samber/lo"
 )
 
+const connectionIDKey = "connection_id"
+
 type TodoService struct {
-	repo  *TodoRepository
-	store sessions.Store
+	repo           *TodoRepository
+	sessionManager *scs.SessionManager
 }
 
-func NewTodoService(repo *TodoRepository, store sessions.Store) *TodoService {
+func NewTodoService(repo *TodoRepository, sessionManager *scs.SessionManager) *TodoService {
 	return &TodoService{
-		repo:  repo,
-		store: store,
+		repo:           repo,
+		sessionManager: sessionManager,
 	}
 }
 
-func (s *TodoService) GetSessionMVC(w http.ResponseWriter, r *http.Request) (string, *components.TodoMVC, error) {
-	ctx := r.Context()
-	sessionID, err := s.upsertSessionID(r, w)
-	if err != nil {
-		return "", nil, fmt.Errorf("failed to get session id: %w", err)
-	}
+func (s *TodoService) GetSessionMVC(ctx context.Context) (string, *components.TodoMVC, error) {
+	sessionID := s.getOrCreateConnectionID(ctx)
 
 	mvc, err := s.repo.GetMVC(ctx, sessionID)
 	if err != nil {
@@ -136,21 +133,11 @@ func (s *TodoService) resetMVC(mvc *components.TodoMVC) {
 	mvc.EditingIdx = -1
 }
 
-func (s *TodoService) upsertSessionID(r *http.Request, w http.ResponseWriter) (string, error) {
-	sess, err := s.store.Get(r, "connections")
-	if err != nil {
-		return "", fmt.Errorf("failed to get session: %w", err)
-	}
-
-	id, ok := sess.Values["id"].(string)
-
-	if !ok {
+func (s *TodoService) getOrCreateConnectionID(ctx context.Context) string {
+	id := s.sessionManager.GetString(ctx, connectionIDKey)
+	if id == "" {
 		id = toolbelt.NextEncodedID()
-		sess.Values["id"] = id
-		if err := sess.Save(r, w); err != nil {
-			return "", fmt.Errorf("failed to save session: %w", err)
-		}
+		s.sessionManager.Put(ctx, connectionIDKey, id)
 	}
-
-	return id, nil
+	return id
 }

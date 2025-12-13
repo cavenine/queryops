@@ -1,4 +1,4 @@
-package worker
+package main
 
 import (
 	"context"
@@ -13,7 +13,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func NewCommand() *cobra.Command {
+func NewWorkerCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "worker",
 		Short: "Run background workers only",

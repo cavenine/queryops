@@ -32,14 +32,14 @@ func (h *Handlers) IndexPage(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handlers) TodosSSE(w http.ResponseWriter, r *http.Request) {
-	sessionID, mvc, err := h.todoService.GetSessionMVC(w, r)
+	ctx := r.Context()
+	sessionID, mvc, err := h.todoService.GetSessionMVC(ctx)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	sse := datastar.NewSSE(w, r)
-	ctx := r.Context()
 
 	send := func(state *components.TodoMVC) error {
 		c := components.TodosMVCView(state)
@@ -98,21 +98,23 @@ func (h *Handlers) TodosSSE(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handlers) ResetTodos(w http.ResponseWriter, r *http.Request) {
-	sessionID, mvc, err := h.todoService.GetSessionMVC(w, r)
+	ctx := r.Context()
+	sessionID, mvc, err := h.todoService.GetSessionMVC(ctx)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	h.todoService.ResetMVC(mvc)
-	if err := h.todoService.SaveMVC(r.Context(), sessionID, mvc); err != nil {
+	if err := h.todoService.SaveMVC(ctx, sessionID, mvc); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 }
 
 func (h *Handlers) CancelEdit(w http.ResponseWriter, r *http.Request) {
-	sessionID, mvc, err := h.todoService.GetSessionMVC(w, r)
+	ctx := r.Context()
+	sessionID, mvc, err := h.todoService.GetSessionMVC(ctx)
 	sse := datastar.NewSSE(w, r)
 	if err != nil {
 		if err := sse.ConsoleError(err); err != nil {
@@ -122,7 +124,7 @@ func (h *Handlers) CancelEdit(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.todoService.CancelEditing(mvc)
-	if err := h.todoService.SaveMVC(r.Context(), sessionID, mvc); err != nil {
+	if err := h.todoService.SaveMVC(ctx, sessionID, mvc); err != nil {
 		if err := sse.ConsoleError(err); err != nil {
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		}
@@ -131,7 +133,8 @@ func (h *Handlers) CancelEdit(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handlers) SetMode(w http.ResponseWriter, r *http.Request) {
-	sessionID, mvc, err := h.todoService.GetSessionMVC(w, r)
+	ctx := r.Context()
+	sessionID, mvc, err := h.todoService.GetSessionMVC(ctx)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -151,14 +154,15 @@ func (h *Handlers) SetMode(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.todoService.SetMode(mvc, mode)
-	if err := h.todoService.SaveMVC(r.Context(), sessionID, mvc); err != nil {
+	if err := h.todoService.SaveMVC(ctx, sessionID, mvc); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 }
 
 func (h *Handlers) ToggleTodo(w http.ResponseWriter, r *http.Request) {
-	sessionID, mvc, err := h.todoService.GetSessionMVC(w, r)
+	ctx := r.Context()
+	sessionID, mvc, err := h.todoService.GetSessionMVC(ctx)
 	sse := datastar.NewSSE(w, r)
 	if err != nil {
 		if err := sse.ConsoleError(err); err != nil {
@@ -176,13 +180,14 @@ func (h *Handlers) ToggleTodo(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.todoService.ToggleTodo(mvc, i)
-	if err := h.todoService.SaveMVC(r.Context(), sessionID, mvc); err != nil {
+	if err := h.todoService.SaveMVC(ctx, sessionID, mvc); err != nil {
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 	}
 }
 
 func (h *Handlers) StartEdit(w http.ResponseWriter, r *http.Request) {
-	sessionID, mvc, err := h.todoService.GetSessionMVC(w, r)
+	ctx := r.Context()
+	sessionID, mvc, err := h.todoService.GetSessionMVC(ctx)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -194,7 +199,7 @@ func (h *Handlers) StartEdit(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.todoService.StartEditing(mvc, i)
-	if err := h.todoService.SaveMVC(r.Context(), sessionID, mvc); err != nil {
+	if err := h.todoService.SaveMVC(ctx, sessionID, mvc); err != nil {
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 	}
 }
@@ -214,7 +219,8 @@ func (h *Handlers) SaveEdit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sessionID, mvc, err := h.todoService.GetSessionMVC(w, r)
+	ctx := r.Context()
+	sessionID, mvc, err := h.todoService.GetSessionMVC(ctx)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -226,7 +232,7 @@ func (h *Handlers) SaveEdit(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.todoService.EditTodo(mvc, i, store.Input)
-	if err := h.todoService.SaveMVC(r.Context(), sessionID, mvc); err != nil {
+	if err := h.todoService.SaveMVC(ctx, sessionID, mvc); err != nil {
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 	}
 }
@@ -237,14 +243,15 @@ func (h *Handlers) DeleteTodo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sessionID, mvc, err := h.todoService.GetSessionMVC(w, r)
+	ctx := r.Context()
+	sessionID, mvc, err := h.todoService.GetSessionMVC(ctx)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	h.todoService.DeleteTodo(mvc, i)
-	if err := h.todoService.SaveMVC(r.Context(), sessionID, mvc); err != nil {
+	if err := h.todoService.SaveMVC(ctx, sessionID, mvc); err != nil {
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 	}
 }

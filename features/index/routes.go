@@ -3,14 +3,14 @@ package index
 import (
 	"queryops/features/index/services"
 
+	"github.com/alexedwards/scs/v2"
 	"github.com/go-chi/chi/v5"
-	"github.com/gorilla/sessions"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-func SetupRoutes(router chi.Router, store sessions.Store, pool *pgxpool.Pool) error {
+func SetupRoutes(router chi.Router, sessionManager *scs.SessionManager, pool *pgxpool.Pool) error {
 	repo := services.NewTodoRepository(pool)
-	todoService := services.NewTodoService(repo, store)
+	todoService := services.NewTodoService(repo, sessionManager)
 
 	handlers := NewHandlers(todoService)
 

@@ -1,0 +1,267 @@
+package pages
+
+import (
+	"queryops/features/auth/services"
+	"queryops/features/common/layouts"
+)
+
+templ AccountPage(email string, passkeys []services.PasskeyInfo) {
+	@layouts.Base("Account Settings") {
+		<div class="flex flex-col w-full min-h-screen">
+			@accountNav()
+			<div class="container mx-auto max-w-2xl p-6">
+				<h1 class="text-2xl font-bold mb-6">Account Settings</h1>
+				
+				<!-- User Info -->
+				<div class="card bg-base-200 mb-6">
+					<div class="card-body">
+						<h2 class="card-title">Profile</h2>
+						<div class="flex items-center gap-2">
+							<span class="text-sm text-base-content/70">Email:</span>
+							<span class="font-medium">{ email }</span>
+						</div>
+					</div>
+				</div>
+				
+				<!-- Passkeys -->
+				<div class="card bg-base-200">
+					<div class="card-body">
+						<div class="flex justify-between items-center mb-4">
+							<h2 class="card-title">Passkeys</h2>
+							<button
+								type="button"
+								class="btn btn-primary btn-sm gap-1"
+								onclick="showAddPasskeyModal()"
+							>
+								<iconify-icon icon="mdi:fingerprint" class="text-lg" noobserver></iconify-icon>
+								Add Passkey
+							</button>
+						</div>
+						
+						if len(passkeys) == 0 {
+							<p class="text-base-content/70">No passkeys registered yet. Add one to enable passwordless login.</p>
+						} else {
+							<div class="space-y-3">
+								for _, pk := range passkeys {
+									@passkeyCard(pk)
+								}
+							</div>
+						}
+					</div>
+				</div>
+			</div>
+		</div>
+		
+		<!-- Add Passkey Modal -->
+		<dialog id="add-passkey-modal" class="modal">
+			<div class="modal-box">
+				<h3 class="font-bold text-lg" id="add-passkey-title">Add Passkey</h3>
+				<div id="add-passkey-step-1">
+					<p class="py-2 text-sm text-base-content/70">
+						Give your passkey a name to help you identify it later (e.g., "MacBook Pro", "iPhone").
+					</p>
+					<input
+						type="text"
+						id="passkey-nickname"
+						class="input input-bordered w-full mt-2"
+						placeholder="Passkey name (optional)"
+						maxlength="50"
+					/>
+				</div>
+				<p class="py-4 hidden" id="add-passkey-message">Setting up your passkey...</p>
+				<div class="modal-action">
+					<button class="btn btn-ghost" onclick="document.getElementById('add-passkey-modal').close()" id="add-passkey-cancel">Cancel</button>
+					<button class="btn btn-primary" onclick="registerPasskey()" id="add-passkey-submit">Continue</button>
+				</div>
+			</div>
+			<form method="dialog" class="modal-backdrop">
+				<button>close</button>
+			</form>
+		</dialog>
+		
+		<!-- Remove Passkey Confirmation Modal -->
+		<dialog id="remove-passkey-modal" class="modal">
+			<div class="modal-box">
+				<h3 class="font-bold text-lg">Remove Passkey</h3>
+				<p class="py-4">Are you sure you want to remove this passkey? You won't be able to use it to sign in anymore.</p>
+				<input type="hidden" id="remove-passkey-id" value=""/>
+				<div class="modal-action">
+					<button class="btn btn-ghost" onclick="document.getElementById('remove-passkey-modal').close()">Cancel</button>
+					<button class="btn btn-error" onclick="confirmRemovePasskey()">Remove</button>
+				</div>
+			</div>
+			<form method="dialog" class="modal-backdrop">
+				<button>close</button>
+			</form>
+		</dialog>
+		
+		<!-- SimpleWebAuthn Browser Library -->
+		<script src="https://unpkg.com/@simplewebauthn/browser/dist/bundle/index.umd.min.js"></script>
+		<script>
+			function showAddPasskeyModal() {
+				const modal = document.getElementById('add-passkey-modal');
+				const step1 = document.getElementById('add-passkey-step-1');
+				const message = document.getElementById('add-passkey-message');
+				const submit = document.getElementById('add-passkey-submit');
+				const cancel = document.getElementById('add-passkey-cancel');
+				const title = document.getElementById('add-passkey-title');
+				const nickname = document.getElementById('passkey-nickname');
+				
+				// Reset state
+				step1.classList.remove('hidden');
+				message.classList.add('hidden');
+				submit.classList.remove('hidden');
+				submit.textContent = 'Continue';
+				submit.disabled = false;
+				cancel.textContent = 'Cancel';
+				title.textContent = 'Add Passkey';
+				nickname.value = '';
+				
+				modal.showModal();
+			}
+			
+			async function registerPasskey() {
+				const modal = document.getElementById('add-passkey-modal');
+				const step1 = document.getElementById('add-passkey-step-1');
+				const message = document.getElementById('add-passkey-message');
+				const submit = document.getElementById('add-passkey-submit');
+				const cancel = document.getElementById('add-passkey-cancel');
+				const title = document.getElementById('add-passkey-title');
+				const nickname = document.getElementById('passkey-nickname').value.trim();
+				
+				// Hide step 1, show message
+				step1.classList.add('hidden');
+				message.classList.remove('hidden');
+				message.textContent = 'Setting up your passkey...';
+				message.className = 'py-4';
+				submit.classList.add('hidden');
+				
+				try {
+					if (!window.SimpleWebAuthnBrowser) {
+						throw new Error('WebAuthn is not supported in this browser');
+					}
+					
+					// Step 1: Get registration options from server
+					const beginResp = await fetch('/passkey/register/begin', {
+						method: 'POST',
+						headers: { 'Content-Type': 'application/json' },
+						body: JSON.stringify({ nickname: nickname }),
+					});
+					
+					if (!beginResp.ok) {
+						const data = await beginResp.json();
+						throw new Error(data.error || 'Failed to start registration');
+					}
+					
+					const options = await beginResp.json();
+					
+					message.textContent = 'Please follow the prompts from your browser or device...';
+					
+					// Step 2: Trigger browser's passkey creation UI
+					const credential = await SimpleWebAuthnBrowser.startRegistration({ optionsJSON: options });
+					
+					message.textContent = 'Saving your passkey...';
+					
+					// Step 3: Send credential to server for storage (include nickname)
+					const finishResp = await fetch('/passkey/register/finish', {
+						method: 'POST',
+						headers: { 'Content-Type': 'application/json' },
+						body: JSON.stringify({ ...credential, nickname: nickname }),
+					});
+					
+					const result = await finishResp.json();
+					
+					if (!finishResp.ok) {
+						throw new Error(result.error || 'Failed to save passkey');
+					}
+					
+					// Success
+					title.textContent = 'Success!';
+					message.innerHTML = '<span class="text-success">Your passkey has been added.</span>';
+					cancel.textContent = 'Close';
+					
+					// Reload page after a moment to show the new passkey
+					setTimeout(() => {
+						window.location.reload();
+					}, 1500);
+					
+				} catch (err) {
+					console.error('Passkey registration error:', err);
+					title.textContent = 'Error';
+					message.innerHTML = '<span class="text-error">' + (err.message || 'Failed to add passkey') + '</span>';
+					cancel.textContent = 'Close';
+				}
+			}
+			
+			function showRemoveModal(passkeyId) {
+				document.getElementById('remove-passkey-id').value = passkeyId;
+				document.getElementById('remove-passkey-modal').showModal();
+			}
+			
+			async function confirmRemovePasskey() {
+				const passkeyId = document.getElementById('remove-passkey-id').value;
+				const modal = document.getElementById('remove-passkey-modal');
+				
+				try {
+					const resp = await fetch('/account/passkey/' + encodeURIComponent(passkeyId), {
+						method: 'DELETE',
+					});
+					
+					const result = await resp.json();
+					
+					if (!resp.ok) {
+						throw new Error(result.error || 'Failed to remove passkey');
+					}
+					
+					modal.close();
+					window.location.reload();
+					
+				} catch (err) {
+					alert(err.message || 'Failed to remove passkey');
+				}
+			}
+		</script>
+	}
+}
+
+templ accountNav() {
+	<nav class="flex justify-between items-center px-4 py-2 bg-base-200">
+		<ul class="menu menu-horizontal rounded-box">
+			<li><a href="/">Back to App</a></li>
+		</ul>
+		<div class="flex items-center gap-4">
+			<span class="text-sm font-medium">Account Settings</span>
+		</div>
+	</nav>
+}
+
+templ passkeyCard(pk services.PasskeyInfo) {
+	<div class="flex items-center justify-between p-3 bg-base-100 rounded-lg">
+		<div class="flex items-center gap-3">
+			<iconify-icon icon="mdi:fingerprint" class="text-2xl text-primary" noobserver></iconify-icon>
+			<div>
+				<div class="font-medium">
+					if pk.Nickname != "" {
+						{ pk.Nickname }
+					} else {
+						Passkey
+					}
+				</div>
+				<div class="text-xs text-base-content/60">
+					Added { pk.CreatedAt.Format("Jan 2, 2006") }
+					if pk.LastUsedAt != nil {
+						 | Last used { pk.LastUsedAt.Format("Jan 2, 2006") }
+					}
+				</div>
+			</div>
+		</div>
+		<button
+			type="button"
+			class="btn btn-ghost btn-sm text-error"
+			data-passkey-id={ pk.ID }
+			onclick="showRemoveModal(this.dataset.passkeyId)"
+		>
+			Remove
+		</button>
+	</div>
+}

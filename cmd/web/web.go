@@ -2,6 +2,7 @@ package web
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net"
@@ -14,20 +15,21 @@ import (
 	"queryops/migrations"
 	"queryops/router"
 
+	"github.com/alexedwards/scs/pgxstore"
+	"github.com/alexedwards/scs/v2"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	"github.com/gorilla/sessions"
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
 )
 
-func NewCommand() *cobra.Command {
+func NewWebCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "web",
 		Short: "Run the web server",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
-			if err := run(ctx); err != nil && err != http.ErrServerClosed {
+			if err := run(ctx); err != nil && !errors.Is(err, http.ErrServerClosed) {
 				return err
 			}
 			return nil
@@ -69,7 +71,7 @@ func run(ctx context.Context) error {
 		clientCfg := background.DefaultClientConfig()
 		eg.Go(func() error {
 			slog.Info("starting in-process river workers")
-			if err := background.RunWorker(egctx, pool, clientCfg); err != nil && err != context.Canceled {
+			if err := background.RunWorker(egctx, pool, clientCfg); err != nil && !errors.Is(err, context.Canceled) {
 				return fmt.Errorf("river client error: %w", err)
 			}
 			return nil
@@ -82,14 +84,17 @@ func run(ctx context.Context) error {
 		middleware.Recoverer,
 	)
 
-	sessionStore := sessions.NewCookieStore([]byte(config.Global.SessionSecret))
-	sessionStore.MaxAge(86400 * 30)
-	sessionStore.Options.Path = "/"
-	sessionStore.Options.HttpOnly = true
-	sessionStore.Options.Secure = false
-	sessionStore.Options.SameSite = http.SameSiteLaxMode
+	// Initialize SCS session manager with PostgreSQL backend
+	sessionManager := scs.New()
+	sessionManager.Store = pgxstore.New(pool)
+	sessionManager.Lifetime = 30 * 24 * time.Hour // 30 days
+	sessionManager.Cookie.Name = "session"
+	sessionManager.Cookie.Path = "/"
+	sessionManager.Cookie.HttpOnly = true
+	sessionManager.Cookie.Secure = config.Global.Environment == config.Prod
+	sessionManager.Cookie.SameSite = http.SameSiteLaxMode
 
-	if err := router.SetupRoutes(egctx, r, sessionStore, pool); err != nil {
+	if err := router.SetupRoutes(egctx, r, sessionManager, pool); err != nil {
 		return fmt.Errorf("error setting up routes: %w", err)
 	}
 
@@ -107,7 +112,7 @@ func run(ctx context.Context) error {
 
 	eg.Go(func() error {
 		err := srv.ListenAndServe()
-		if err != nil && err != http.ErrServerClosed {
+		if err != nil && !errors.Is(err, http.ErrServerClosed) {
 			return fmt.Errorf("server error: %w", err)
 		}
 		return nil

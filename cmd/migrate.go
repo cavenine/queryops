@@ -1,4 +1,4 @@
-package migrate
+package main
 
 import (
 	"fmt"
@@ -11,7 +11,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func NewCommand() *cobra.Command {
+func NewMigrationCommand() *cobra.Command {
 	root := &cobra.Command{
 		Use:   "migrate",
 		Short: "Run database migrations",

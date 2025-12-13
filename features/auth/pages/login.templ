@@ -1,0 +1,150 @@
+package pages
+
+import "queryops/features/common/layouts"
+
+templ LoginPage(email, errorMsg string) {
+	@layouts.Base("Login") {
+		<div class="flex flex-1 items-center justify-center bg-base-200">
+			<div class="card w-full max-w-md bg-base-100 shadow-xl border border-base-300/40">
+				<div class="card-body gap-4">
+					<div class="flex items-center justify-center gap-2">
+						<iconify-icon icon="mdi:console" class="text-primary text-2xl" noobserver></iconify-icon>
+						<span class="font-mono text-lg tracking-wide">QueryOps</span>
+					</div>
+					<h2 class="card-title justify-center text-2xl font-semibold tracking-tight">Login</h2>
+					if errorMsg != "" {
+						<div class="alert alert-error" role="alert">
+							<span>{ errorMsg }</span>
+						</div>
+					}
+					<!-- Passkey error message (populated by JS) -->
+					<div id="passkey-error" class="alert alert-error hidden" role="alert">
+						<span id="passkey-error-message"></span>
+					</div>
+					<!-- Passkey login button -->
+					<button
+						type="button"
+						id="passkey-login-btn"
+						class="btn btn-outline btn-primary w-full gap-2"
+						onclick="loginWithPasskey()"
+					>
+						<iconify-icon icon="mdi:fingerprint" class="text-xl" noobserver></iconify-icon>
+						Sign in with Passkey
+					</button>
+					<div class="divider">OR</div>
+					<form method="POST" action="/login" class="space-y-4">
+						<div class="form-control">
+							<label class="label" for="email">
+								<span class="label-text">Email</span>
+							</label>
+							<input
+								type="email"
+								id="email"
+								name="email"
+								value={ email }
+								class="input input-bordered w-full"
+								placeholder="you@example.com"
+								required
+							/>
+						</div>
+						<div class="form-control">
+							<label class="label" for="password">
+								<span class="label-text">Password</span>
+							</label>
+							<input
+								type="password"
+								id="password"
+								name="password"
+								class="input input-bordered w-full"
+								placeholder="Enter your password"
+								required
+							/>
+						</div>
+						<div class="form-control mt-6">
+							<button type="submit" class="btn btn-primary w-full">Login with Password</button>
+						</div>
+					</form>
+					<p class="text-center text-sm">
+						Don't have an account?
+						<a href="/register" class="link link-primary">Register</a>
+					</p>
+				</div>
+			</div>
+		</div>
+		<!-- SimpleWebAuthn Browser Library -->
+		<script src="https://unpkg.com/@simplewebauthn/browser/dist/bundle/index.umd.min.js"></script>
+		<script>
+			async function loginWithPasskey() {
+				const btn = document.getElementById('passkey-login-btn');
+				const errorDiv = document.getElementById('passkey-error');
+				const errorMsg = document.getElementById('passkey-error-message');
+				
+				// Reset error state
+				errorDiv.classList.add('hidden');
+				btn.disabled = true;
+				btn.innerHTML = '<span class="loading loading-spinner loading-sm"></span> Authenticating...';
+				
+				try {
+					// Check if WebAuthn is supported
+					if (!window.SimpleWebAuthnBrowser) {
+						throw new Error('WebAuthn is not supported in this browser');
+					}
+					
+					// Step 1: Get authentication options from server
+					const beginResp = await fetch('/passkey/login/begin', {
+						method: 'POST',
+						headers: { 'Content-Type': 'application/json' },
+					});
+					
+					if (!beginResp.ok) {
+						const data = await beginResp.json();
+						throw new Error(data.error || 'Failed to start authentication');
+					}
+					
+					const options = await beginResp.json();
+					
+					// Step 2: Trigger browser's passkey UI
+					const credential = await SimpleWebAuthnBrowser.startAuthentication({ optionsJSON: options });
+					
+					// Step 3: Send credential to server for verification
+					const finishResp = await fetch('/passkey/login/finish', {
+						method: 'POST',
+						headers: { 'Content-Type': 'application/json' },
+						body: JSON.stringify(credential),
+					});
+					
+					const result = await finishResp.json();
+					
+					if (!finishResp.ok) {
+						throw new Error(result.error || 'Failed to complete authentication');
+					}
+					
+					// Success - redirect to home
+					window.location.href = result.redirect || '/';
+					
+				} catch (err) {
+					console.error('Passkey login error:', err);
+					errorMsg.textContent = err.message || 'Passkey authentication failed';
+					errorDiv.classList.remove('hidden');
+					
+					// Reset button
+					btn.disabled = false;
+					btn.innerHTML = '<iconify-icon icon="mdi:fingerprint" class="text-xl" noobserver></iconify-icon> Sign in with Passkey';
+				}
+			}
+			
+			// Check if WebAuthn is available and show/hide passkey button accordingly
+			document.addEventListener('DOMContentLoaded', function() {
+				const btn = document.getElementById('passkey-login-btn');
+				if (!window.PublicKeyCredential) {
+					btn.style.display = 'none';
+					// Also hide the divider since there's no passkey option
+					const dividers = document.querySelectorAll('.divider');
+					if (dividers.length > 0) {
+						dividers[0].style.display = 'none';
+					}
+				}
+			});
+		</script>
+	}
+}

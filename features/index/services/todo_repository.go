@@ -1,3 +1,4 @@
+// Package services provides data access and business logic for the index feature.
 package services
 
 import (
@@ -17,16 +18,19 @@ type TodoRepository struct {
 	pool *pgxpool.Pool
 }
 
+// NewTodoRepository creates a new TodoRepository with the given connection pool.
 func NewTodoRepository(pool *pgxpool.Pool) *TodoRepository {
 	return &TodoRepository{pool: pool}
 }
 
-// GetMVC returns the TodoMVC state for the given session ID, or nil if none exists.
+// GetMVC retrieves the TodoMVC state for the given session ID.
+// It returns nil if no state exists for the session.
 func (r *TodoRepository) GetMVC(ctx context.Context, sessionID string) (*components.TodoMVC, error) {
 	row := r.pool.QueryRow(ctx, `SELECT state FROM todos WHERE session_id = $1`, sessionID)
 
 	var data []byte
 	if err := row.Scan(&data); err != nil {
+		// Return nil for missing sessions, not an error
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, nil
 		}
@@ -41,13 +45,14 @@ func (r *TodoRepository) GetMVC(ctx context.Context, sessionID string) (*compone
 	return mvc, nil
 }
 
-// SaveMVC upserts the TodoMVC state for the given session ID.
+// SaveMVC inserts or updates the TodoMVC state for the given session ID.
 func (r *TodoRepository) SaveMVC(ctx context.Context, sessionID string, mvc *components.TodoMVC) error {
 	data, err := json.Marshal(mvc)
 	if err != nil {
 		return fmt.Errorf("marshalling todo state: %w", err)
 	}
 
+	// Upsert: insert new row or update existing state if session already exists
 	_, err = r.pool.Exec(ctx, `
 INSERT INTO todos (session_id, state, created_at, updated_at)
 VALUES ($1, $2, NOW(), NOW())

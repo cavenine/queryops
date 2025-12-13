@@ -1,5 +1,7 @@
 package components
 
+import "queryops/features/auth"
+
 type page int
 
 const (
@@ -11,13 +13,25 @@ const (
 )
 
 templ Navigation(page page) {
-	<nav class="flex justify-center">
-		<ul class="menu menu-vertical md:menu-horizontal bg-base-200 rounded-box">
+	<nav class="flex justify-between items-center px-4 py-2 bg-base-200">
+		<ul class="menu menu-horizontal rounded-box">
 			<li class={ "hover:text-primary", templ.KV("text-primary", page == PageIndex) }><a href="/">TODO</a></li>
 			<li class={ "hover:text-primary", templ.KV("text-primary", page == PageCounter) }><a href="/counter">Counter</a></li>
 			<li class={ "hover:text-primary", templ.KV("text-primary", page == PageMonitor) }><a href="/monitor">System Monitoring</a></li>
 			<li class={ "hover:text-primary", templ.KV("text-primary", page == PageReverse) }><a href="/reverse">Reverse</a></li>
 			<li class={ "hover:text-primary", templ.KV("text-primary", page == PageSortable) }><a href="/sortable">Sortable</a></li>
 		</ul>
+		<div class="flex items-center gap-4">
+			if user := auth.GetUserFromContext(ctx); user != nil {
+				<span class="text-sm">{ user.Email }</span>
+				<a href="/account" class="btn btn-sm btn-ghost gap-1">
+					<iconify-icon icon="mdi:cog" class="text-lg" noobserver></iconify-icon>
+					Settings
+				</a>
+				<form method="POST" action="/logout" class="inline">
+					<button type="submit" class="btn btn-sm btn-ghost">Logout</button>
+				</form>
+			}
+		</div>
 	</nav>
 }

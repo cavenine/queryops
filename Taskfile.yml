@@ -3,6 +3,7 @@ version: "3"
 env:
   NATS_PORT: 4222
   STATIC_DIR: "web/resources/static"
+  GOEXPERIMENT: "greenteagc,jsonv2"
 
 tasks:
   # The `build:` tasks below are used together for production builds of a project

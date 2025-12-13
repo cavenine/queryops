@@ -7,23 +7,20 @@ import (
 	"queryops/features/counter/pages"
 
 	"github.com/Jeffail/gabs/v2"
-	"github.com/gorilla/sessions"
+	"github.com/alexedwards/scs/v2"
 	"github.com/starfederation/datastar-go/datastar"
 )
 
-const (
-	sessionKey = "counter"
-	countKey   = "count"
-)
+const countKey = "counter_count"
 
 type Handlers struct {
-	globalCounter atomic.Uint32
-	sessionStore  sessions.Store
+	globalCounter  atomic.Uint32
+	sessionManager *scs.SessionManager
 }
 
-func NewHandlers(sessionStore sessions.Store) *Handlers {
+func NewHandlers(sessionManager *scs.SessionManager) *Handlers {
 	return &Handlers{
-		sessionStore: sessionStore,
+		sessionManager: sessionManager,
 	}
 }
 
@@ -34,11 +31,7 @@ func (h *Handlers) CounterPage(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handlers) CounterData(w http.ResponseWriter, r *http.Request) {
-	userCount, _, err := h.getUserValue(r)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	userCount := h.getUserValue(r)
 
 	store := pages.CounterSignals{
 		Global: h.globalCounter.Load(),
@@ -60,22 +53,14 @@ func (h *Handlers) IncrementGlobal(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handlers) IncrementUser(w http.ResponseWriter, r *http.Request) {
-	val, sess, err := h.getUserValue(r)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
+	ctx := r.Context()
+	val := h.sessionManager.GetInt(ctx, countKey)
 	val++
-	sess.Values[countKey] = val
-	if err := sess.Save(r, w); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	h.sessionManager.Put(ctx, countKey, val)
 
 	update := gabs.New()
 	h.updateGlobal(update)
-	if _, err := update.Set(val, "user"); err != nil {
+	if _, err := update.Set(uint32(val), "user"); err != nil {
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
@@ -85,17 +70,8 @@ func (h *Handlers) IncrementUser(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h *Handlers) getUserValue(r *http.Request) (uint32, *sessions.Session, error) {
-	session, err := h.sessionStore.Get(r, sessionKey)
-	if err != nil {
-		return 0, nil, err
-	}
-
-	val, ok := session.Values[countKey].(uint32)
-	if !ok {
-		val = 0
-	}
-	return val, session, nil
+func (h *Handlers) getUserValue(r *http.Request) uint32 {
+	return uint32(h.sessionManager.GetInt(r.Context(), countKey))
 }
 
 func (h *Handlers) updateGlobal(store *gabs.Container) {

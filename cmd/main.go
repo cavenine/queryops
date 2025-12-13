@@ -7,9 +7,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"queryops/cmd/migrate"
 	"queryops/cmd/web"
-	"queryops/cmd/worker"
 	"queryops/config"
 
 	"github.com/spf13/cobra"
@@ -30,9 +28,9 @@ func main() {
 	}
 
 	root.AddCommand(
-		web.NewCommand(),
-		migrate.NewCommand(),
-		worker.NewCommand(),
+		web.NewWebCommand(),
+		NewMigrationCommand(),
+		NewWorkerCommand(),
 	)
 
 	if err := root.ExecuteContext(ctx); err != nil {

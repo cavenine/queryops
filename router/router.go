@@ -8,6 +8,8 @@ import (
 	"sync"
 
 	"queryops/config"
+	accountFeature "queryops/features/account"
+	authFeature "queryops/features/auth"
 	counterFeature "queryops/features/counter"
 	indexFeature "queryops/features/index"
 	monitorFeature "queryops/features/monitor"
@@ -15,27 +17,53 @@ import (
 	sortableFeature "queryops/features/sortable"
 	"queryops/web/resources"
 
+	"github.com/alexedwards/scs/v2"
 	"github.com/go-chi/chi/v5"
-	"github.com/gorilla/sessions"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/starfederation/datastar-go/datastar"
 )
 
-func SetupRoutes(ctx context.Context, router chi.Router, sessionStore *sessions.CookieStore, pool *pgxpool.Pool) (err error) {
+func SetupRoutes(ctx context.Context, router chi.Router, sessionManager *scs.SessionManager, pool *pgxpool.Pool) (err error) {
 
 	if config.Global.Environment == config.Dev {
 		setupReload(router)
 	}
 
+	// Static assets (public)
 	router.Handle("/static/*", resources.Handler())
 
-	if err := errors.Join(
-		indexFeature.SetupRoutes(router, sessionStore, pool),
-		counterFeature.SetupRoutes(router, sessionStore),
-		monitorFeature.SetupRoutes(router),
-		sortableFeature.SetupRoutes(router),
-		reverseFeature.SetupRoutes(router),
-	); err != nil {
+	// Initialize auth feature (creates services once)
+	auth, err := authFeature.NewAuthFeature(sessionManager, pool)
+	if err != nil {
+		return fmt.Errorf("initializing auth feature: %w", err)
+	}
+
+	// Auth routes (public) - wrapped with LoadAndSave for session access
+	router.Group(func(r chi.Router) {
+		r.Use(sessionManager.LoadAndSave)
+		auth.SetupPublicRoutes(r)
+	})
+
+	// Protected routes - require authentication
+	router.Group(func(r chi.Router) {
+		r.Use(sessionManager.LoadAndSave)
+		r.Use(authFeature.RequireAuth(auth.UserService(), sessionManager))
+
+		auth.SetupProtectedRoutes(r)
+		accountFeature.SetupRoutes(r, auth.CredentialRepo())
+
+		if err = errors.Join(
+			indexFeature.SetupRoutes(r, sessionManager, pool),
+			counterFeature.SetupRoutes(r, sessionManager),
+			monitorFeature.SetupRoutes(r),
+			sortableFeature.SetupRoutes(r),
+			reverseFeature.SetupRoutes(r),
+		); err != nil {
+			return
+		}
+	})
+
+	if err != nil {
 		return fmt.Errorf("error setting up routes: %w", err)
 	}
 

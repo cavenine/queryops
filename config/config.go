@@ -32,6 +32,11 @@ type Config struct {
 
 	AutoMigrate          bool `mapstructure:"AUTO_MIGRATE"`
 	BackgroundProcessing bool `mapstructure:"BACKGROUND_PROCESSING"`
+
+	// WebAuthn configuration for passkey authentication
+	WebAuthnRPID          string `mapstructure:"WEBAUTHN_RP_ID"`           // Domain name (e.g., "localhost" or "example.com")
+	WebAuthnRPOrigin      string `mapstructure:"WEBAUTHN_RP_ORIGIN"`       // Full origin URL (e.g., "http://localhost:8080")
+	WebAuthnRPDisplayName string `mapstructure:"WEBAUTHN_RP_DISPLAY_NAME"` // Human-readable site name
 }
 
 var (
@@ -58,6 +63,9 @@ func loadBase() *Config {
 	v.SetDefault("DATABASE_URL", "postgres://queryops:queryops@localhost:5432/queryops?sslmode=disable")
 	v.SetDefault("AUTO_MIGRATE", true)
 	v.SetDefault("BACKGROUND_PROCESSING", true)
+	v.SetDefault("WEBAUTHN_RP_ID", "localhost")
+	v.SetDefault("WEBAUTHN_RP_ORIGIN", "http://localhost:8080")
+	v.SetDefault("WEBAUTHN_RP_DISPLAY_NAME", "QueryOps")
 
 	var cfg Config
 	if err := v.Unmarshal(&cfg); err != nil {

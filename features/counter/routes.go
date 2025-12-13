@@ -1,12 +1,12 @@
 package counter
 
 import (
+	"github.com/alexedwards/scs/v2"
 	"github.com/go-chi/chi/v5"
-	"github.com/gorilla/sessions"
 )
 
-func SetupRoutes(router chi.Router, sessionStore sessions.Store) error {
-	handlers := NewHandlers(sessionStore)
+func SetupRoutes(router chi.Router, sessionManager *scs.SessionManager) error {
+	handlers := NewHandlers(sessionManager)
 
 	router.Get("/counter", handlers.CounterPage)
 	router.Get("/counter/data", handlers.CounterData)
