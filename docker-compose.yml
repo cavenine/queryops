@@ -1,0 +1,16 @@
+services:
+  db:
+    image: postgres:18
+    container_name: queryops-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: queryops
+      POSTGRES_USER: queryops
+      POSTGRES_PASSWORD: queryops
+    ports:
+      - "5432:5432"
+    volumes:
+      - queryops-postgres-data:/var/lib/postgresql
+
+volumes:
+  queryops-postgres-data:
