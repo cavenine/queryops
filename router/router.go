@@ -29,6 +29,16 @@ func SetupRoutes(ctx context.Context, router chi.Router, sessionManager *scs.Ses
 		setupReload(router)
 	}
 
+	// Healthcheck for kamal-proxy readiness.
+	router.Get("/up", func(w http.ResponseWriter, r *http.Request) {
+		if err := pool.Ping(r.Context()); err != nil {
+			http.Error(w, "database not ready", http.StatusServiceUnavailable)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("OK"))
+	})
+
 	// Static assets (public)
 	router.Handle("/static/*", resources.Handler())
 

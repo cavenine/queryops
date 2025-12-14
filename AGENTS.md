@@ -1,0 +1,20 @@
+# Agent Instructions
+- Dev server with live reload: `go tool task live`.
+- Production build: `go tool task build` (templ/styles/web-components).
+- Run server binary: `go tool task run` (runs `./bin/queryops web`).
+- Migrations: `go tool task migrate` and related `migrate:*` tasks.
+- Lint/typecheck: `go vet ./...`; format: `gofmt -w .`.
+- Tests: `go test ./...`; single test: `go test ./path -run TestName`.
+- Client assets only: `go tool task build:templ|build:styles|build:wc`.
+- Debugging: `go tool task debug` (Delve).
+- Imports: stdlib, blank line, external deps, blank line, internal packages.
+- Naming: exported PascalCase; unexported camelCase; constants UPPER_SNAKE_CASE.
+- Types: favor concrete types; depend on small interfaces at boundaries for testing.
+- Errors: always check/return early; wrap with context `fmt.Errorf("doing X: %w", err)`.
+- HTTP handlers: avoid panics; use `http.Error` with appropriate status codes.
+- Logging: structured `slog` with context fields (route, user, request IDs).
+- Concurrency: honor `context.Context` for cancellation; clean up goroutines on shutdown.
+- Templates: `.templ` generates `_templ.go`; run `go tool templ generate` (or `live` task) after edits.
+- Dependency injection: prefer constructors (e.g., `NewHandlers`) over globals or package-level state.
+- Layout: keep files small and feature-focused; name handlers `ResourceAction` where practical.
+- No Cursor or Copilot repo rules are present; this file is the primary agent guide.

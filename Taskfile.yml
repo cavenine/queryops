@@ -1,5 +1,8 @@
 version: "3"
 
+dotenv:
+  - .env
+
 env:
   NATS_PORT: 4222
   STATIC_DIR: "web/resources/static"
@@ -33,16 +36,47 @@ tasks:
 
   build:
     cmds:
-      - go build -tags=prod -o bin/main ./cmd
+      - go build -tags=prod -o bin/queryops ./cmd
     deps:
       - build:templ
       - build:styles
       - build:wc
 
+  ghcr:login:
+    desc: Login to GitHub Container Registry
+    cmds:
+      - echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USERNAME" --password-stdin
+    preconditions:
+      - sh: test -n "$GHCR_USERNAME"
+        msg: GHCR_USERNAME is required
+      - sh: test -n "$GHCR_TOKEN"
+        msg: GHCR_TOKEN is required (classic PAT with write:packages)
+
+  ghcr:publish:
+    desc: Build and push image to GHCR
+    deps:
+      - ghcr:login
+    vars:
+      GIT_SHA:
+        sh: git rev-parse --short HEAD
+    preconditions:
+      - sh: test -n "$GHCR_IMAGE"
+        msg: 'GHCR_IMAGE is required (example: ghcr.io/<owner>/<repo>)'
+    cmds:
+      - docker buildx build --platform linux/amd64 --tag "$GHCR_IMAGE:latest" --tag "$GHCR_IMAGE:dev-{{.GIT_SHA}}" --push .
+
+  docker:build:
+    desc: Build local Docker image (no push)
+    vars:
+      GIT_SHA:
+        sh: git rev-parse --short HEAD
+    cmds:
+      - docker build -t "${DOCKER_IMAGE:-queryops}:local" -t "${DOCKER_IMAGE:-queryops}:local-{{.GIT_SHA}}" .
+
   # Use this task to debug with the delve debugger
   debug:
     cmds:
-      - go tool dlv exec ./bin/main
+      - go tool dlv exec ./bin/queryops
     deps:
       - build
 
@@ -68,8 +102,9 @@ tasks:
     cmds:
       - |
         go tool air  \
-         -build.cmd "go build -tags=dev -o tmp/bin/main ./cmd" \
-         -build.bin "tmp/bin/main" \
+          -build.cmd "go build -tags=dev -o tmp/bin/queryops ./cmd" \
+         -build.bin "tmp/bin/queryops" \
+
          -build.args_bin "web" \
          -build.exclude_dir "data,node_modules,web/resources/libs/datastar/node_modules,web/resources/libs/lit/node_modules" \
          -build.include_ext "go,templ" \
@@ -84,37 +119,37 @@ tasks:
 
   run:
     cmds:
-      - ./bin/main web
+      - ./bin/queryops web
     deps:
       - build
 
   migrate:
     cmds:
-      - ./bin/main migrate up
+      - ./bin/queryops migrate up
     deps:
       - build
 
   migrate:down:
     cmds:
-      - ./bin/main migrate down --steps 1
+      - ./bin/queryops migrate down --steps 1
     deps:
       - build
 
   migrate:version:
     cmds:
-      - ./bin/main migrate version
+      - ./bin/queryops migrate version
     deps:
       - build
 
   migrate:to:
     cmds:
-      - ./bin/main migrate to {{.VERSION}}
+      - ./bin/queryops migrate to {{.VERSION}}
     deps:
       - build
 
   migrate:force:
     cmds:
-      - ./bin/main migrate force {{.VERSION}}
+      - ./bin/queryops migrate force {{.VERSION}}
     deps:
       - build
 

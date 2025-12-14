@@ -1,0 +1,5 @@
+# Local secrets and derived files
+secrets*
+
+# Kamal runtime files (if any)
+*.log

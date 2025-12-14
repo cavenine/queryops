@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Run DB migrations before booting new containers.
+#
+# This hook runs on the deploy machine (not the server).
+# We run migrations on the primary host using the *new* image version.
+
+destination_args=()
+if [[ -n "${KAMAL_DESTINATION:-}" ]]; then
+  destination_args=(-d "$KAMAL_DESTINATION")
+fi
+
+kamal app exec --primary "${destination_args[@]}" --version "$KAMAL_VERSION" migrate up

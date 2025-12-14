@@ -1,0 +1,73 @@
+# Kamal deployment configuration (single DigitalOcean VM)
+#
+# Usage:
+#   kamal setup
+#   kamal deploy
+#
+# Secrets are read from:
+#   .kamal/secrets-common
+#   .kamal/secrets
+#
+# See README.md for a full runbook.
+
+ssh:
+  user: deploy
+
+service: queryops
+image: cavenine/queryops
+
+servers:
+  web:
+    hosts:
+      - 165.245.135.75
+  workers:
+    hosts:
+      - 165.245.135.75
+    cmd: worker
+    proxy: false
+
+proxy:
+  hosts:
+    - app.queryops.com
+  app_port: 8080
+  ssl: true
+  healthcheck:
+    path: /up
+    interval: 1
+    timeout: 5
+
+env:
+  clear:
+    HOST: 0.0.0.0
+    PORT: "8080"
+    AUTO_MIGRATE: "false"
+  secret:
+    - DATABASE_URL
+    - SESSION_SECRET
+    - WEBAUTHN_RP_ID
+    - WEBAUTHN_RP_ORIGIN
+    - WEBAUTHN_RP_DISPLAY_NAME
+
+registry:
+  server: ghcr.io
+  username: cavenine
+  password:
+    - KAMAL_REGISTRY_PASSWORD
+
+builder:
+  arch: amd64
+
+accessories:
+  postgres:
+    service: postgres
+    image: postgres:18
+    roles:
+      - web
+    directories:
+      - postgres-data-v18:/var/lib/postgresql
+    env:
+      clear:
+        POSTGRES_USER: queryops
+        POSTGRES_DB: queryops
+      secret:
+        - POSTGRES_PASSWORD
