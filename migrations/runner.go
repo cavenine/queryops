@@ -2,6 +2,7 @@ package migrations
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 
 	"github.com/golang-migrate/migrate/v4"
@@ -44,7 +45,7 @@ func Up(databaseURL string) error {
 	}
 	defer m.Close()
 
-	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
+	if err := m.Up(); err != nil && !errors.Is(err, migrate.ErrNoChange) {
 		return err
 	}
 	return nil
@@ -61,7 +62,7 @@ func Down(databaseURL string, steps int) error {
 		return nil
 	}
 
-	if err := m.Steps(-steps); err != nil && err != migrate.ErrNoChange {
+	if err := m.Steps(-steps); err != nil && !errors.Is(err, migrate.ErrNoChange) {
 		return err
 	}
 	return nil
@@ -74,7 +75,7 @@ func ToVersion(databaseURL string, version uint) error {
 	}
 	defer m.Close()
 
-	if err := m.Migrate(version); err != nil && err != migrate.ErrNoChange {
+	if err := m.Migrate(version); err != nil && !errors.Is(err, migrate.ErrNoChange) {
 		return err
 	}
 	return nil
@@ -88,7 +89,7 @@ func Version(databaseURL string) (uint, bool, error) {
 	defer m.Close()
 
 	v, dirty, err := m.Version()
-	if err != nil && err != migrate.ErrNilVersion {
+	if err != nil && !errors.Is(err, migrate.ErrNilVersion) {
 		return 0, false, err
 	}
 	return v, dirty, nil

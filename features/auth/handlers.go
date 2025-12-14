@@ -1,25 +1,37 @@
 package auth
 
 import (
+	"context"
+	"log/slog"
 	"net/http"
 
 	"queryops/features/auth/pages"
 	"queryops/features/auth/services"
+	"queryops/internal/antibot"
 
 	"github.com/alexedwards/scs/v2"
 )
 
+const registerFormID = "register"
+
+type userService interface {
+	Authenticate(ctx context.Context, email, password string) (*services.User, error)
+	Register(ctx context.Context, email, password string) (*services.User, error)
+}
+
 // Handlers contains the HTTP handlers for authentication.
 type Handlers struct {
-	userService    *services.UserService
+	userService    userService
 	sessionManager *scs.SessionManager
+	antibot        *antibot.Protector
 }
 
 // NewHandlers creates a new Handlers instance.
-func NewHandlers(userService *services.UserService, sessionManager *scs.SessionManager) *Handlers {
+func NewHandlers(userService userService, sessionManager *scs.SessionManager) *Handlers {
 	return &Handlers{
 		userService:    userService,
 		sessionManager: sessionManager,
+		antibot:        antibot.New(sessionManager, antibot.DefaultConfig()),
 	}
 }
 
@@ -68,15 +80,25 @@ func (h *Handlers) renderLoginError(w http.ResponseWriter, r *http.Request, emai
 
 // RegisterPage renders the registration form.
 func (h *Handlers) RegisterPage(w http.ResponseWriter, r *http.Request) {
-	if err := pages.RegisterPage("", "").Render(r.Context(), w); err != nil {
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-	}
+	h.renderRegisterForm(w, r, "", "")
 }
 
 // RegisterSubmit handles the registration form submission.
 func (h *Handlers) RegisterSubmit(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseForm(); err != nil {
 		h.renderRegisterError(w, r, "", "Invalid form data")
+		return
+	}
+
+	ab := h.antibot.Validate(r, registerFormID, r.FormValue("js_token"), r.FormValue("website"))
+	if !ab.Allowed {
+		slog.Warn(
+			"antibot blocked register",
+			"reason", ab.Reason,
+			"ip", antibot.ClientIP(r),
+			"ua", r.UserAgent(),
+		)
+		h.renderRegisterError(w, r, r.FormValue("email"), "Unable to submit form. Please refresh and try again.")
 		return
 	}
 
@@ -105,7 +127,16 @@ func (h *Handlers) RegisterSubmit(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handlers) renderRegisterError(w http.ResponseWriter, r *http.Request, email, errorMsg string) {
 	w.WriteHeader(http.StatusUnprocessableEntity)
-	if err := pages.RegisterPage(email, errorMsg).Render(r.Context(), w); err != nil {
+	h.renderRegisterForm(w, r, email, errorMsg)
+}
+
+func (h *Handlers) renderRegisterForm(w http.ResponseWriter, r *http.Request, email, errorMsg string) {
+	token, err := h.antibot.Issue(r.Context(), registerFormID)
+	if err != nil {
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+	if err := pages.RegisterPage(email, errorMsg, token).Render(r.Context(), w); err != nil {
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 	}
 }

@@ -104,7 +104,6 @@ tasks:
         go tool air  \
           -build.cmd "go build -tags=dev -o tmp/bin/queryops ./cmd" \
          -build.bin "tmp/bin/queryops" \
-
          -build.args_bin "web" \
          -build.exclude_dir "data,node_modules,web/resources/libs/datastar/node_modules,web/resources/libs/lit/node_modules" \
          -build.include_ext "go,templ" \

@@ -2,7 +2,7 @@ package pages
 
 import "queryops/features/common/layouts"
 
-templ RegisterPage(email, errorMsg string) {
+templ RegisterPage(email, errorMsg, antibotToken string) {
 	@layouts.Base("Register") {
 		<div class="flex flex-1 items-center justify-center bg-base-200">
 			<div class="card w-full max-w-md bg-base-100 shadow-xl border border-base-300/40">
@@ -17,7 +17,14 @@ templ RegisterPage(email, errorMsg string) {
 							<span>{ errorMsg }</span>
 						</div>
 					}
-					<form method="POST" action="/register" class="space-y-4">
+					<form method="POST" action="/register" class="space-y-4" data-antibot-token={ antibotToken }>
+						<div class="hp-field" aria-hidden="true">
+							<label class="label" for="website">
+								<span class="label-text">Website</span>
+							</label>
+							<input type="text" id="website" name="website" tabindex="-1" autocomplete="off"/>
+						</div>
+						<input type="text" name="js_token" class="hp-field" tabindex="-1" autocomplete="off" required/>
 						<div class="form-control">
 							<label class="label" for="email">
 								<span class="label-text">Email</span>

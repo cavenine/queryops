@@ -10,7 +10,7 @@ import templruntime "github.com/a-h/templ/runtime"
 
 import "queryops/features/common/layouts"
 
-func RegisterPage(email, errorMsg string) templ.Component {
+func RegisterPage(email, errorMsg, antibotToken string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -66,20 +66,33 @@ func RegisterPage(email, errorMsg string) templ.Component {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<form method=\"POST\" action=\"/register\" class=\"space-y-4\"><div class=\"form-control\"><label class=\"label\" for=\"email\"><span class=\"label-text\">Email</span></label> <input type=\"email\" id=\"email\" name=\"email\" value=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<form method=\"POST\" action=\"/register\" class=\"space-y-4\" data-antibot-token=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var4 string
-			templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(email)
+			templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(antibotToken)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `features/auth/pages/register.templ`, Line: 29, Col: 21}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `features/auth/pages/register.templ`, Line: 20, Col: 95}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "\" class=\"input input-bordered w-full\" placeholder=\"you@example.com\" required></div><div class=\"form-control\"><label class=\"label\" for=\"password\"><span class=\"label-text\">Password</span></label> <input type=\"password\" id=\"password\" name=\"password\" class=\"input input-bordered w-full\" placeholder=\"Choose a password\" required></div><div class=\"form-control mt-6\"><button type=\"submit\" class=\"btn btn-primary w-full\">Register</button></div></form><div class=\"divider\">OR</div><p class=\"text-center text-sm\">Already have an account? <a href=\"/login\" class=\"link link-primary\">Login</a></p></div></div></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "\"><div class=\"hp-field\" aria-hidden=\"true\"><label class=\"label\" for=\"website\"><span class=\"label-text\">Website</span></label> <input type=\"text\" id=\"website\" name=\"website\" tabindex=\"-1\" autocomplete=\"off\"></div><input type=\"text\" name=\"js_token\" class=\"hp-field\" tabindex=\"-1\" autocomplete=\"off\" required><div class=\"form-control\"><label class=\"label\" for=\"email\"><span class=\"label-text\">Email</span></label> <input type=\"email\" id=\"email\" name=\"email\" value=\"")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var5 string
+			templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(email)
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `features/auth/pages/register.templ`, Line: 36, Col: 21}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "\" class=\"input input-bordered w-full\" placeholder=\"you@example.com\" required></div><div class=\"form-control\"><label class=\"label\" for=\"password\"><span class=\"label-text\">Password</span></label> <input type=\"password\" id=\"password\" name=\"password\" class=\"input input-bordered w-full\" placeholder=\"Choose a password\" required></div><div class=\"form-control mt-6\"><button type=\"submit\" class=\"btn btn-primary w-full\">Register</button></div></form><div class=\"divider\">OR</div><p class=\"text-center text-sm\">Already have an account? <a href=\"/login\" class=\"link link-primary\">Login</a></p></div></div></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log/slog"
 	"strconv"
 
 	"queryops/background"
@@ -42,6 +43,7 @@ func newUpCmd() *cobra.Command {
 			if err := migrations.Up(config.Global.DatabaseURL); err != nil {
 				return err
 			}
+			slog.Info("migrations applied")
 
 			// Always run River's migrations alongside application migrations.
 			ctx := cmd.Context()

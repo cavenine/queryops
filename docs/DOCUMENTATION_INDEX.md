@@ -42,6 +42,14 @@ Contains:
 
 **Best for**: Daily development reference and onboarding new developers
 
+### 3. ANTIBOT.md
+**Lightweight server-validated anti-bot protection**
+
+Contains:
+- Honeypot + JS token + timing checks
+- How to add protection to new forms
+- DataStar-compatible token injection notes
+
 ## Key Findings
 
 ### Architectural Paradigm
