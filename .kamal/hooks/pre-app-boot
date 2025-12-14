@@ -11,4 +11,4 @@ if [[ -n "${KAMAL_DESTINATION:-}" ]]; then
   destination_args=(-d "$KAMAL_DESTINATION")
 fi
 
-kamal app exec --primary "${destination_args[@]}" --version "$KAMAL_VERSION" "/queryops" migrate up
+kamal app exec --primary "${destination_args[@]}" --version "$KAMAL_VERSION" migrate up

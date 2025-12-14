@@ -10,22 +10,25 @@
 #
 # See README.md for a full runbook.
 
+ssh:
+  user: deploy
+
 service: queryops
-image: ghcr.io/cavenine/queryops
+image: cavenine/queryops
 
 servers:
   web:
     hosts:
-      - 1.2.3.4
+      - 165.245.135.75
   workers:
     hosts:
-      - 1.2.3.4
+      - 165.245.135.75
     cmd: worker
     proxy: false
 
 proxy:
   hosts:
-    - queryops.example.com
+    - app.queryops.com
   app_port: 8080
   ssl: true
   healthcheck:
@@ -46,7 +49,8 @@ env:
     - WEBAUTHN_RP_DISPLAY_NAME
 
 registry:
-  username: YOUR_REGISTRY_USERNAME
+  server: ghcr.io
+  username: cavenine
   password:
     - KAMAL_REGISTRY_PASSWORD
 
@@ -60,7 +64,7 @@ accessories:
     roles:
       - web
     directories:
-      - postgres-data:/var/lib/postgresql/data
+      - postgres-data-v18:/var/lib/postgresql
     env:
       clear:
         POSTGRES_USER: queryops

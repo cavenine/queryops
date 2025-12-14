@@ -54,10 +54,19 @@ Create an `A` record for your app hostname pointing at the droplet IP, e.g.:
 ### 4) Configure Kamal
 
 Edit `config/deploy.yml`:
-- Set `image` to your GHCR image (e.g. `ghcr.io/<owner>/<repo>`)
 - Replace `1.2.3.4` with your droplet IP
 - Replace `queryops.example.com` with your real hostname
-- Configure registry username/password
+
+This config expects image settings via env vars at runtime:
+- `KAMAL_IMAGE` (example: `ghcr.io/<owner>/<repo>`)
+- `KAMAL_REGISTRY_USERNAME` (the GitHub username that owns the PAT used for pulls)
+
+Example:
+
+```shell
+export KAMAL_IMAGE=ghcr.io/<owner>/<repo>
+export KAMAL_REGISTRY_USERNAME=<github-username>
+```
 
 Healthcheck:
 - Kamal proxy defaults to `GET /up` and this app implements `/up`.
@@ -67,8 +76,9 @@ Healthcheck:
 Create `.kamal/secrets` (do not commit it). Example:
 
 ```bash
-# Registry
-KAMAL_REGISTRY_PASSWORD=...           # ghcr/dockerhub token
+# Registry (for private GHCR pulls)
+# PAT (classic) scope: read:packages
+KAMAL_REGISTRY_PASSWORD=...
 
 # Postgres (accessory)
 POSTGRES_PASSWORD=$(openssl rand -hex 32)
@@ -86,14 +96,20 @@ DATABASE_URL=postgres://queryops:${POSTGRES_PASSWORD}@postgres:5432/queryops?ssl
 ### 6) First-time setup
 
 ```shell
-# installs docker, boots proxy, builds/pushes image, and boots the app
+# installs docker, boots proxy, and boots the app
 kamal setup
 
 # boot postgres (accessories are managed separately)
 kamal accessory boot postgres
 
-# deploy latest
-kamal deploy
+# deploy a specific published release tag
+kamal deploy -v v1.2.3
+```
+
+Note: if you prefer not to export env vars globally, prefix commands instead:
+
+```shell
+KAMAL_IMAGE=ghcr.io/<owner>/<repo> KAMAL_REGISTRY_USERNAME=<github-username> kamal deploy -v v1.2.3
 ```
 
 ### 7) Migrations
