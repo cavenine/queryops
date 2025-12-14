@@ -9,7 +9,8 @@ COPY . ./
 
 # Use Taskfile.yml as the single source of truth for prod builds.
 RUN --mount=type=cache,target=/root/.cache/go-build \
-	go tool task build
+	go tool task download && \
+    go tool task build
 
 FROM debian:trixie-slim
 RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates && rm -rf /var/lib/apt/lists/*

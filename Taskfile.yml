@@ -71,7 +71,7 @@ tasks:
       GIT_SHA:
         sh: git rev-parse --short HEAD
     cmds:
-      - docker build -t "${DOCKER_IMAGE:-queryops}:local" -t "${DOCKER_IMAGE:-queryops}:local-{{.GIT_SHA}}" .
+      - docker buildx -t "${DOCKER_IMAGE:-queryops}:local" -t "${DOCKER_IMAGE:-queryops}:local-{{.GIT_SHA}}" .
 
   # Use this task to debug with the delve debugger
   debug:

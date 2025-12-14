@@ -25,11 +25,13 @@ func run() error {
 		"https://raw.githubusercontent.com/starfederation/datastar/develop/bundles/datastar.js.map": resources.StaticDirectoryPath + "/datastar/datastar.js.map",
 		"https://github.com/saadeghi/daisyui/releases/latest/download/daisyui.js":                   resources.StylesDirectoryPath + "/daisyui/daisyui.js",
 		"https://github.com/saadeghi/daisyui/releases/latest/download/daisyui-theme.js":             resources.StylesDirectoryPath + "/daisyui/daisyui-theme.js",
+		"https://code.iconify.design/iconify-icon/2.1.0/iconify-icon.min.js":                        resources.StaticDirectoryPath + "/libs/iconify-icon.min.js",
 	}
 
 	directories := []string{
 		resources.StaticDirectoryPath + "/datastar",
 		resources.StylesDirectoryPath + "/daisyui",
+		resources.StaticDirectoryPath + "/libs",
 	}
 
 	if err := removeDirectories(directories); err != nil {
