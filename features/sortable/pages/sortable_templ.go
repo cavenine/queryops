@@ -9,6 +9,7 @@ import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
 import (
+	"queryops/features/auth"
 	"queryops/features/common/components"
 	"queryops/features/common/layouts"
 	"queryops/web/resources"
@@ -47,38 +48,26 @@ func SortablePage() templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = components.Navigation(components.PageSortable).Render(ctx, templ_7745c5c3_Buffer)
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, " <article class=\"prose mx-auto pt-2 flex flex-col gap-2\"><div class=\"alert alert-warning text-center\">")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = components.Icon("material-symbols:warning").Render(ctx, templ_7745c5c3_Buffer)
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<div class=\"flex flex-col gap-2\"><span>This example uses <a class=\"link\" href=\"https://lit.dev/\">lit</a> and <a class=\"link\" href=\"https://github.com/SortableJS/Sortable\">SortableJS</a>, you will need to download both libraries before this example will work</span> <span>Check out this <a class=\"link\" href=\"https://github.com/zangster300/northstar/blob/main/web/libs/lit/README.md\">README</a> to learn more</span></div></div><sortable-example data-signals=\"{title: 'Item Info', info:'', items: [{name: `item one`}, {name: `item two`}, {name: `item three`}, {name: `item four`}, {name: `item five`}]}\" data-attr:title=\"$title\" data-attr:value=\"$info\" data-attr:items=\"JSON.stringify($items)\" data-on:change=\"event.detail && console.log(`Send this data somewhere else! ${event.detail}`)\"></sortable-example><script type=\"module\" src=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"flex flex-col gap-6\"><h1 class=\"text-3xl font-bold tracking-tight\">Sortable List</h1><p class=\"text-base-content/60\">Drag and drop integration example.</p><div class=\"alert alert-warning\"><iconify-icon icon=\"lucide:alert-triangle\" class=\"text-xl\"></iconify-icon><div class=\"flex flex-col gap-1 text-sm\"><span class=\"font-bold\">Library Requirement</span> <span>This example requires `lit` and `SortableJS`. See <a class=\"link\" href=\"https://github.com/zangster300/northstar/blob/main/web/libs/lit/README.md\">README</a>.</span></div></div><div class=\"card bg-base-100 shadow-sm border border-base-300\"><div class=\"card-body\"><sortable-example data-signals=\"{title: 'Item Info', info:'', items: [{name: `item one`}, {name: `item two`}, {name: `item three`}, {name: `item four`}, {name: `item five`}]}\" data-attr:title=\"$title\" data-attr:value=\"$info\" data-attr:items=\"JSON.stringify($items)\" data-on:change=\"event.detail && console.log(`Send this data somewhere else! ${event.detail}`)\"></sortable-example></div></div></div><script type=\"module\" src=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var3 string
 			templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(resources.StaticPath("libs/sortable-example.js"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `features/sortable/pages/sortable.templ`, Line: 27, Col: 79}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `features/sortable/pages/sortable.templ`, Line: 36, Col: 78}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "\"></script></article>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "\"></script>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = layouts.Base("Sortable").Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = layouts.Dashboard("Sortable", components.PageSortable, auth.GetUserFromContext(ctx)).Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

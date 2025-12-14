@@ -4,6 +4,7 @@ import (
 	"github.com/starfederation/datastar-go/datastar"
 	"queryops/features/common/components"
 	"queryops/features/common/layouts"
+	"queryops/features/auth"
 )
 
 type CounterSignals struct {
@@ -53,10 +54,15 @@ templ Counter(signals CounterSignals) {
 }
 
 templ CounterPage() {
-	@layouts.Base("Counter") {
-		@components.Navigation(components.PageCounter)
-		<article class="prose mx-auto m-2">
-			<div id="container" data-init={ datastar.GetSSE("/counter/data") }></div>
-		</article>
+	@layouts.Dashboard("Counter", components.PageCounter, auth.GetUserFromContext(ctx)) {
+		<div class="flex flex-col gap-6">
+			<h1 class="text-3xl font-bold tracking-tight">Counter</h1>
+			
+			<div class="card bg-base-100 shadow-sm border border-base-300">
+				<div class="card-body">
+					<div id="container" data-init={ datastar.GetSSE("/counter/data") }></div>
+				</div>
+			</div>
+		</div>
 	}
 }

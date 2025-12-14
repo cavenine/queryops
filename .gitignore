@@ -15,3 +15,4 @@
 bin
 web/resources/static/index.css
 web/resources/static/libs
+tmp

@@ -1,37 +1,154 @@
 package components
 
-import "queryops/features/auth"
+import (
+	"queryops/features/auth/services"
+)
 
-type page int
+type Page int
 
 const (
-	PageIndex page = iota
+	PageIndex Page = iota
 	PageCounter
 	PageMonitor
 	PageReverse
 	PageSortable
+	PageHosts
+	PageConfigs
+	PageQueries
+	PageAccount
 )
 
-templ Navigation(page page) {
-	<nav class="flex justify-between items-center px-4 py-2 bg-base-200">
-		<ul class="menu menu-horizontal rounded-box">
-			<li class={ "hover:text-primary", templ.KV("text-primary", page == PageIndex) }><a href="/">TODO</a></li>
-			<li class={ "hover:text-primary", templ.KV("text-primary", page == PageCounter) }><a href="/counter">Counter</a></li>
-			<li class={ "hover:text-primary", templ.KV("text-primary", page == PageMonitor) }><a href="/monitor">System Monitoring</a></li>
-			<li class={ "hover:text-primary", templ.KV("text-primary", page == PageReverse) }><a href="/reverse">Reverse</a></li>
-			<li class={ "hover:text-primary", templ.KV("text-primary", page == PageSortable) }><a href="/sortable">Sortable</a></li>
-		</ul>
-		<div class="flex items-center gap-4">
-			if user := auth.GetUserFromContext(ctx); user != nil {
-				<span class="text-sm">{ user.Email }</span>
-				<a href="/account" class="btn btn-sm btn-ghost gap-1">
-					<iconify-icon icon="mdi:cog" class="text-lg" noobserver></iconify-icon>
-					Settings
-				</a>
-				<form method="POST" action="/logout" class="inline">
-					<button type="submit" class="btn btn-sm btn-ghost">Logout</button>
-				</form>
-			}
+templ Sidebar(page Page, user *services.User) {
+	<div class="h-full min-h-screen bg-base-200 text-base-content w-80 p-4 flex flex-col gap-6 border-r border-base-300">
+		<div class="flex items-center gap-3 px-2">
+			<iconify-icon icon="mdi:console" class="text-primary text-2xl" noobserver></iconify-icon>
+			<span class="text-xl font-bold tracking-tight">QueryOps</span>
 		</div>
-	</nav>
+
+		<div class="flex-1 overflow-y-auto py-4">
+			<ul class="menu menu-md gap-1 p-0">
+				<li class="menu-title text-xs font-semibold uppercase opacity-50 tracking-wider mb-2">Management</li>
+				<li>
+					<a href="/" class={ templ.KV("active", page == PageIndex) }>
+						<iconify-icon icon="lucide:check-square" class="text-lg"></iconify-icon>
+						Tasks
+						if page == PageIndex {
+							<span class="badge badge-sm badge-primary ml-auto">Active</span>
+						}
+					</a>
+				</li>
+				<li>
+					<a href="#" class={ templ.KV("active", page == PageHosts) }>
+						<iconify-icon icon="lucide:monitor" class="text-lg"></iconify-icon>
+						Hosts
+						<span class="badge badge-sm badge-ghost ml-auto text-xs">Soon</span>
+					</a>
+				</li>
+				<li>
+					<a href="#" class={ templ.KV("active", page == PageConfigs) }>
+						<iconify-icon icon="lucide:settings-2" class="text-lg"></iconify-icon>
+						Configurations
+					</a>
+				</li>
+				<li>
+					<a href="#" class={ templ.KV("active", page == PageQueries) }>
+						<iconify-icon icon="lucide:terminal" class="text-lg"></iconify-icon>
+						Queries
+					</a>
+				</li>
+
+				<li class="menu-title text-xs font-semibold uppercase opacity-50 tracking-wider mt-6 mb-2">System</li>
+				<li>
+					<a href="/monitor" class={ templ.KV("active", page == PageMonitor) }>
+						<iconify-icon icon="lucide:activity" class="text-lg"></iconify-icon>
+						Monitoring
+					</a>
+				</li>
+				<li>
+					<a href="/counter" class={ templ.KV("active", page == PageCounter) }>
+						<iconify-icon icon="lucide:hash" class="text-lg"></iconify-icon>
+						Counter
+					</a>
+				</li>
+				
+				<li>
+					<details open?={ page == PageReverse || page == PageSortable }>
+						<summary>
+							<iconify-icon icon="lucide:flask-conical" class="text-lg"></iconify-icon>
+							Labs
+						</summary>
+						<ul>
+							<li><a href="/reverse" class={ templ.KV("active", page == PageReverse) }>Reverse Text</a></li>
+							<li><a href="/sortable" class={ templ.KV("active", page == PageSortable) }>Sortable List</a></li>
+						</ul>
+					</details>
+				</li>
+			</ul>
+		</div>
+
+		if user != nil {
+			<div class="border-t border-base-300 pt-4 mt-auto">
+				<div class="dropdown dropdown-top w-full">
+					<div tabindex="0" role="button" class="btn btn-ghost w-full justify-start gap-3 px-2">
+						<div class="avatar placeholder">
+							<div class="bg-neutral text-neutral-content rounded-full w-8">
+								<span class="text-xs">{ string(user.Email[0]) }</span>
+							</div>
+						</div>
+						<div class="flex flex-col items-start text-xs truncate max-w-[140px]">
+							<span class="font-bold truncate w-full text-left">{ user.Email }</span>
+							<span class="opacity-60">Admin</span>
+						</div>
+						<iconify-icon icon="lucide:chevron-up" class="ml-auto"></iconify-icon>
+					</div>
+					<ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow-lg bg-base-100 rounded-box w-full mb-2 border border-base-300">
+						<li>
+							<a href="/account">
+								<iconify-icon icon="lucide:user"></iconify-icon>
+								Profile
+							</a>
+						</li>
+						<li>
+							<form method="POST" action="/logout">
+								<button type="submit" class="w-full text-left flex items-center gap-2 text-error">
+									<iconify-icon icon="lucide:log-out"></iconify-icon>
+									Logout
+								</button>
+							</form>
+						</li>
+					</ul>
+				</div>
+			</div>
+		}
+	</div>
+}
+
+templ MobileHeader(title string) {
+	<div class="navbar bg-base-100 border-b border-base-300 lg:hidden sticky top-0 z-30">
+		<div class="flex-none">
+			<label for="main-drawer" aria-label="open sidebar" class="btn btn-square btn-ghost">
+				<iconify-icon icon="lucide:menu" class="text-2xl"></iconify-icon>
+			</label>
+		</div>
+		<div class="flex-1">
+			<span class="btn btn-ghost text-xl">{ title }</span>
+		</div>
+		<div class="flex-none">
+			<div class="dropdown dropdown-end">
+				<div tabindex="0" role="button" class="btn btn-ghost btn-circle avatar placeholder">
+					<div class="bg-neutral text-neutral-content rounded-full w-8">
+						<span class="text-xs">U</span>
+					</div>
+				</div>
+				<ul tabindex="0" class="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-100 rounded-box w-52">
+					<li><a href="/account">Profile</a></li>
+					<li>
+						<form method="POST" action="/logout">
+							<button type="submit">Logout</button>
+						</form>
+					</li>
+				</ul>
+			</div>
+		</div>
+	</div>
 }

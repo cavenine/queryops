@@ -4,21 +4,33 @@ import (
 	"queryops/features/common/components"
 	"queryops/features/common/layouts"
 	"queryops/web/resources"
+	"queryops/features/auth"
 )
 
 templ ReversePage() {
-	@layouts.Base("Reverse Web Component") {
-		@components.Navigation(components.PageReverse)
-		<div
-			class="h-screen flex justify-center items-center"
-		>
-			<div class="border border-primary rounded flex flex-col gap-2 p-8 w-80">
-				<label class="input">
-					<span class="label">Reverse</span>
-					<input type="text" data-bind:_name=""/>
-				</label>
-				<p class="truncate" data-signals:_reversed="" data-text="$_reversed"></p>
-				<reverse-component data-on:reverse="$_reversed = evt.detail.value" data-attr:name="$_name"></reverse-component>
+	@layouts.Dashboard("Reverse Web Component", components.PageReverse, auth.GetUserFromContext(ctx)) {
+		<div class="flex flex-col gap-6">
+			<h1 class="text-3xl font-bold tracking-tight">Reverse Text</h1>
+			<p class="text-base-content/60">Example of Web Component integration.</p>
+
+			<div class="card bg-base-100 shadow-sm border border-base-300 max-w-lg">
+				<div class="card-body">
+					<div class="flex flex-col gap-4">
+						<div class="form-control">
+							<label class="label">
+								<span class="label-text">Input Text</span>
+							</label>
+							<input type="text" class="input input-bordered" placeholder="Type something..." data-bind:_name=""/>
+						</div>
+						
+						<div class="bg-base-200 p-4 rounded-lg">
+							<div class="label-text mb-2">Reversed Output</div>
+							<p class="font-mono text-lg truncate" data-signals:_reversed="" data-text="$_reversed">Waiting for input...</p>
+						</div>
+
+						<reverse-component data-on:reverse="$_reversed = evt.detail.value" data-attr:name="$_name"></reverse-component>
+					</div>
+				</div>
 			</div>
 		</div>
 		<script type="module" src={ resources.StaticPath("libs/reverse-component.js") }></script>

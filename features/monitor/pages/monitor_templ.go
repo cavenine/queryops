@@ -10,6 +10,7 @@ import templruntime "github.com/a-h/templ/runtime"
 
 import (
 	"github.com/starfederation/datastar-go/datastar"
+	"queryops/features/auth"
 	"queryops/features/common/components"
 	"queryops/features/common/layouts"
 )
@@ -56,30 +57,26 @@ func MonitorPage() templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = components.Navigation(components.PageMonitor).Render(ctx, templ_7745c5c3_Buffer)
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, " <div id=\"container\" data-init=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"flex flex-col gap-6\"><h1 class=\"text-3xl font-bold tracking-tight\">System Monitoring</h1><div id=\"container\" data-init=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var3 string
 			templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(datastar.GetSSE("/monitor/events"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `features/monitor/pages/monitor.templ`, Line: 23, Col: 49}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `features/monitor/pages/monitor.templ`, Line: 26, Col: 50}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "\" class=\"h-screen flex justify-center items-center\" data-signals=\"{memTotal:'', memUsed:'', memUsedPercent:'', cpuUser:'', cpuSystem:'', cpuIdle:''}\"><div class=\"border border-primary rounded flex gap-8 p-8\"><div id=\"mem\" class=\"flex flex-col\"><h1 class=\"text-center pb-2 text-xl\">Memory</h1><p>Total: <span data-text=\"$memTotal\"></span></p><p>Used: <span data-text=\"$memUsed\"></span></p><p>Used (%): <span data-text=\"$memUsedPercent\"></span></p></div><div id=\"cpu\" class=\"flex flex-col\"><h1 class=\"text-center pb-2 text-xl\">CPU</h1><p>User: <span data-text=\"$cpuUser\"></span></p><p>System: <span data-text=\"$cpuSystem\"></span></p><p>Idle: <span data-text=\"$cpuIdle\"></span></p></div></div></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "\" data-signals=\"{memTotal:'', memUsed:'', memUsedPercent:'', cpuUser:'', cpuSystem:'', cpuIdle:''}\" class=\"grid grid-cols-1 md:grid-cols-2 gap-6\"><!-- Memory Card --><div class=\"card bg-base-100 shadow-sm border border-base-300\"><div class=\"card-body\"><div class=\"flex items-center gap-2 mb-4\"><div class=\"p-2 bg-primary/10 rounded-lg text-primary\"><iconify-icon icon=\"lucide:memory-stick\" class=\"text-xl\"></iconify-icon></div><h2 class=\"card-title text-base\">Memory Usage</h2></div><div class=\"flex flex-col gap-3\"><div class=\"flex justify-between items-end\"><span class=\"text-sm opacity-70\">Used Percentage</span> <span class=\"text-2xl font-mono\" data-text=\"$memUsedPercent\">0%</span></div><progress class=\"progress progress-primary w-full\" data-attr:value=\"$memUsedPercent.replace('%','')\" max=\"100\"></progress><div class=\"grid grid-cols-2 gap-4 mt-2\"><div class=\"flex flex-col\"><span class=\"text-xs opacity-60 uppercase tracking-wider\">Total</span> <span class=\"font-mono\" data-text=\"$memTotal\"></span></div><div class=\"flex flex-col\"><span class=\"text-xs opacity-60 uppercase tracking-wider\">Used</span> <span class=\"font-mono\" data-text=\"$memUsed\"></span></div></div></div></div></div><!-- CPU Card --><div class=\"card bg-base-100 shadow-sm border border-base-300\"><div class=\"card-body\"><div class=\"flex items-center gap-2 mb-4\"><div class=\"p-2 bg-secondary/10 rounded-lg text-secondary\"><iconify-icon icon=\"lucide:cpu\" class=\"text-xl\"></iconify-icon></div><h2 class=\"card-title text-base\">CPU Load</h2></div><div class=\"flex flex-col gap-3\"><div class=\"flex justify-between items-center border-b border-base-200 pb-2\"><span class=\"text-sm opacity-70\">User</span> <span class=\"font-mono\" data-text=\"$cpuUser\"></span></div><div class=\"flex justify-between items-center border-b border-base-200 pb-2\"><span class=\"text-sm opacity-70\">System</span> <span class=\"font-mono\" data-text=\"$cpuSystem\"></span></div><div class=\"flex justify-between items-center\"><span class=\"text-sm opacity-70\">Idle</span> <span class=\"font-mono\" data-text=\"$cpuIdle\"></span></div></div></div></div></div></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = layouts.Base("System Monitoring").Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = layouts.Dashboard("System Monitoring", components.PageMonitor, auth.GetUserFromContext(ctx)).Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

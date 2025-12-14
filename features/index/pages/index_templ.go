@@ -10,6 +10,7 @@ import templruntime "github.com/a-h/templ/runtime"
 
 import (
 	"github.com/starfederation/datastar-go/datastar"
+	"queryops/features/auth"
 	"queryops/features/common/components"
 	"queryops/features/common/layouts"
 )
@@ -47,34 +48,26 @@ func IndexPage(title string) templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"flex flex-col w-full min-h-screen\">")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = components.Navigation(components.PageIndex).Render(ctx, templ_7745c5c3_Buffer)
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<div id=\"todos-container\" data-init=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"flex flex-col gap-6\"><!-- Header Section --><div class=\"flex flex-col md:flex-row md:items-center justify-between gap-4\"><div><h1 class=\"text-3xl font-bold tracking-tight\">Task Management</h1><p class=\"text-base-content/60 mt-1\">Manage your deployment tasks and configurations.</p></div><div class=\"flex gap-2\"><button class=\"btn btn-primary btn-sm gap-2\"><iconify-icon icon=\"lucide:plus\"></iconify-icon> New Task</button></div></div><!-- Tasks Card --><div class=\"card bg-base-100 shadow-sm border border-base-300\"><div class=\"card-body p-0\"><div id=\"todos-container\" data-init=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var3 string
 			templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(datastar.GetSSE("/api/todos"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `features/index/pages/index.templ`, Line: 13, Col: 70}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `features/index/pages/index.templ`, Line: 30, Col: 72}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "\"></div></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "\"></div></div></div></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = layouts.Base(title).Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = layouts.Dashboard(title, components.PageIndex, auth.GetUserFromContext(ctx)).Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

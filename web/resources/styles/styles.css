@@ -12,19 +12,54 @@
     name: "datastar";
     default: true;
 
-    --color-base-100: "#0b1325";
-    --color-base-200: "#1e304a";
-    --color-base-300: "#3a506b";
-    --color-primary: "#6366f1";
-    --color-secondary: "#bfdbfe";
-    --color-accent: "#7dd3fc";
-    --color-neutral: "#444";
-    --color-neutral-content: "#fff";
-    --color-info: "#0369a1";
-    --color-success: "#69c383";
-    --color-warning: "#facc15";
-    --color-error: "#e11d48";
-  
+    /* Slate-based Enterprise Theme */
+    --color-base-100: "#f8fafc"; /* Slate 50 */
+    --color-base-200: "#f1f5f9"; /* Slate 100 */
+    --color-base-300: "#e2e8f0"; /* Slate 200 */
+    --color-base-content: "#0f172a"; /* Slate 900 */
+    
+    --color-primary: "#4f46e5"; /* Indigo 600 */
+    --color-primary-content: "#ffffff";
+    
+    --color-secondary: "#64748b"; /* Slate 500 */
+    --color-secondary-content: "#ffffff";
+    
+    --color-accent: "#0ea5e9"; /* Sky 500 */
+    --color-accent-content: "#ffffff";
+    
+    --color-neutral: "#1e293b"; /* Slate 800 */
+    --color-neutral-content: "#f8fafc";
+    
+    --color-info: "#3b82f6";
+    --color-success: "#22c55e";
+    --color-warning: "#eab308";
+    --color-error: "#ef4444";
+    
+    --rounded-box: "0.5rem";
+    --rounded-btn: "0.375rem";
+}
+
+@plugin "./daisyui/daisyui-theme.js" {
+    name: "datastar-dark";
+    default: false;
+    prefersdark: true;
+
+    /* Dark Mode - Slate Deep */
+    --color-base-100: "#0f172a"; /* Slate 900 */
+    --color-base-200: "#1e293b"; /* Slate 800 */
+    --color-base-300: "#334155"; /* Slate 700 */
+    --color-base-content: "#f8fafc"; /* Slate 50 */
+    
+    --color-primary: "#6366f1"; /* Indigo 500 */
+    --color-primary-content: "#ffffff";
+    
+    --color-secondary: "#94a3b8"; /* Slate 400 */
+    --color-secondary-content: "#0f172a";
+    
+    --color-accent: "#38bdf8"; /* Sky 400 */
+    
+    --color-neutral: "#020617"; /* Slate 950 */
+    --color-neutral-content: "#f8fafc";
 }
 
 @layer utilities {
@@ -36,5 +71,15 @@
         height: 1px;
         overflow: hidden;
         white-space: nowrap;
+    }
+    
+    /* Prevent icon pop/layout shift */
+    iconify-icon {
+        display: inline-block;
+        width: 1.2em;
+        height: 1.2em;
+        vertical-align: middle; 
+        min-width: 1.2em;
+        min-height: 1.2em;
     }
 }

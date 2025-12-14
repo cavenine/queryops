@@ -3,45 +3,59 @@ package pages
 import (
 	"queryops/features/auth/services"
 	"queryops/features/common/layouts"
+	"queryops/features/common/components"
+	"queryops/features/auth"
 )
 
 templ AccountPage(email string, passkeys []services.PasskeyInfo) {
-	@layouts.Base("Account Settings") {
-		<div class="flex flex-col w-full min-h-screen">
-			@accountNav()
-			<div class="container mx-auto max-w-2xl p-6">
-				<h1 class="text-2xl font-bold mb-6">Account Settings</h1>
-				
-				<!-- User Info -->
-				<div class="card bg-base-200 mb-6">
+	@layouts.Dashboard("Account Settings", components.PageAccount, auth.GetUserFromContext(ctx)) {
+		<div class="flex flex-col gap-6">
+			<h1 class="text-3xl font-bold tracking-tight">Account Settings</h1>
+			
+			<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+				<!-- Profile Card -->
+				<div class="card bg-base-100 shadow-sm border border-base-300">
 					<div class="card-body">
-						<h2 class="card-title">Profile</h2>
-						<div class="flex items-center gap-2">
-							<span class="text-sm text-base-content/70">Email:</span>
-							<span class="font-medium">{ email }</span>
+						<div class="flex items-center gap-2 mb-2">
+							<iconify-icon icon="lucide:user" class="text-xl opacity-70"></iconify-icon>
+							<h2 class="card-title text-base">Profile Information</h2>
+						</div>
+						
+						<div class="form-control w-full">
+							<label class="label">
+								<span class="label-text">Email Address</span>
+							</label>
+							<input type="text" value={ email } readonly class="input input-bordered w-full bg-base-200" />
 						</div>
 					</div>
 				</div>
 				
-				<!-- Passkeys -->
-				<div class="card bg-base-200">
+				<!-- Security Card -->
+				<div class="card bg-base-100 shadow-sm border border-base-300">
 					<div class="card-body">
-						<div class="flex justify-between items-center mb-4">
-							<h2 class="card-title">Passkeys</h2>
+						<div class="flex items-center justify-between mb-4">
+							<div class="flex items-center gap-2">
+								<iconify-icon icon="lucide:shield-check" class="text-xl opacity-70"></iconify-icon>
+								<h2 class="card-title text-base">Security & Passkeys</h2>
+							</div>
 							<button
 								type="button"
-								class="btn btn-primary btn-sm gap-1"
+								class="btn btn-primary btn-sm gap-2"
 								onclick="showAddPasskeyModal()"
 							>
-								<iconify-icon icon="mdi:fingerprint" class="text-lg" noobserver></iconify-icon>
+								<iconify-icon icon="lucide:fingerprint"></iconify-icon>
 								Add Passkey
 							</button>
 						</div>
 						
 						if len(passkeys) == 0 {
-							<p class="text-base-content/70">No passkeys registered yet. Add one to enable passwordless login.</p>
+							<div class="text-center py-8 text-base-content/60 bg-base-200/50 rounded-lg">
+								<iconify-icon icon="lucide:fingerprint" class="text-4xl mb-2 opacity-50"></iconify-icon>
+								<p class="text-sm">No passkeys registered.</p>
+								<p class="text-xs mt-1">Add one to enable passwordless login.</p>
+							</div>
 						} else {
-							<div class="space-y-3">
+							<div class="flex flex-col gap-2">
 								for _, pk := range passkeys {
 									@passkeyCard(pk)
 								}
@@ -224,44 +238,36 @@ templ AccountPage(email string, passkeys []services.PasskeyInfo) {
 	}
 }
 
-templ accountNav() {
-	<nav class="flex justify-between items-center px-4 py-2 bg-base-200">
-		<ul class="menu menu-horizontal rounded-box">
-			<li><a href="/">Back to App</a></li>
-		</ul>
-		<div class="flex items-center gap-4">
-			<span class="text-sm font-medium">Account Settings</span>
-		</div>
-	</nav>
-}
-
 templ passkeyCard(pk services.PasskeyInfo) {
-	<div class="flex items-center justify-between p-3 bg-base-100 rounded-lg">
+	<div class="flex items-center justify-between p-4 bg-base-200/50 rounded-lg border border-base-200">
 		<div class="flex items-center gap-3">
-			<iconify-icon icon="mdi:fingerprint" class="text-2xl text-primary" noobserver></iconify-icon>
+			<div class="p-2 bg-base-200 rounded-full">
+				<iconify-icon icon="lucide:fingerprint" class="text-xl opacity-70"></iconify-icon>
+			</div>
 			<div>
-				<div class="font-medium">
+				<div class="font-medium text-sm">
 					if pk.Nickname != "" {
 						{ pk.Nickname }
 					} else {
 						Passkey
 					}
 				</div>
-				<div class="text-xs text-base-content/60">
+				<div class="text-xs text-base-content/50">
 					Added { pk.CreatedAt.Format("Jan 2, 2006") }
 					if pk.LastUsedAt != nil {
-						 | Last used { pk.LastUsedAt.Format("Jan 2, 2006") }
+						 · Used { pk.LastUsedAt.Format("Jan 2, 2006") }
 					}
 				</div>
 			</div>
 		</div>
 		<button
 			type="button"
-			class="btn btn-ghost btn-sm text-error"
+			class="btn btn-ghost btn-sm btn-square text-error/70 hover:text-error hover:bg-error/10"
 			data-passkey-id={ pk.ID }
 			onclick="showRemoveModal(this.dataset.passkeyId)"
+			title="Remove passkey"
 		>
-			Remove
+			<iconify-icon icon="lucide:trash-2"></iconify-icon>
 		</button>
 	</div>
 }

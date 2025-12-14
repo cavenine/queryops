@@ -9,6 +9,7 @@ import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
 import (
+	"queryops/features/auth"
 	"queryops/features/common/components"
 	"queryops/features/common/layouts"
 	"queryops/web/resources"
@@ -47,18 +48,14 @@ func ReversePage() templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = components.Navigation(components.PageReverse).Render(ctx, templ_7745c5c3_Buffer)
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, " <div class=\"h-screen flex justify-center items-center\"><div class=\"border border-primary rounded flex flex-col gap-2 p-8 w-80\"><label class=\"input\"><span class=\"label\">Reverse</span> <input type=\"text\" data-bind:_name=\"\"></label><p class=\"truncate\" data-signals:_reversed=\"\" data-text=\"$_reversed\"></p><reverse-component data-on:reverse=\"$_reversed = evt.detail.value\" data-attr:name=\"$_name\"></reverse-component></div></div><script type=\"module\" src=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"flex flex-col gap-6\"><h1 class=\"text-3xl font-bold tracking-tight\">Reverse Text</h1><p class=\"text-base-content/60\">Example of Web Component integration.</p><div class=\"card bg-base-100 shadow-sm border border-base-300 max-w-lg\"><div class=\"card-body\"><div class=\"flex flex-col gap-4\"><div class=\"form-control\"><label class=\"label\"><span class=\"label-text\">Input Text</span></label> <input type=\"text\" class=\"input input-bordered\" placeholder=\"Type something...\" data-bind:_name=\"\"></div><div class=\"bg-base-200 p-4 rounded-lg\"><div class=\"label-text mb-2\">Reversed Output</div><p class=\"font-mono text-lg truncate\" data-signals:_reversed=\"\" data-text=\"$_reversed\">Waiting for input...</p></div><reverse-component data-on:reverse=\"$_reversed = evt.detail.value\" data-attr:name=\"$_name\"></reverse-component></div></div></div></div><script type=\"module\" src=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var3 string
 			templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(resources.StaticPath("libs/reverse-component.js"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `features/reverse/pages/reverse.templ`, Line: 24, Col: 79}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `features/reverse/pages/reverse.templ`, Line: 36, Col: 79}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 			if templ_7745c5c3_Err != nil {
@@ -70,7 +67,7 @@ func ReversePage() templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = layouts.Base("Reverse Web Component").Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = layouts.Dashboard("Reverse Web Component", components.PageReverse, auth.GetUserFromContext(ctx)).Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

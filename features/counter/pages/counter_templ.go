@@ -10,6 +10,7 @@ import templruntime "github.com/a-h/templ/runtime"
 
 import (
 	"github.com/starfederation/datastar-go/datastar"
+	"queryops/features/auth"
 	"queryops/features/common/components"
 	"queryops/features/common/layouts"
 )
@@ -47,7 +48,7 @@ func CounterButtons() templ.Component {
 		var templ_7745c5c3_Var2 string
 		templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.JoinStringErrs(datastar.PostSSE("/counter/increment/global"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `features/counter/pages/counter.templ`, Line: 18, Col: 64}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `features/counter/pages/counter.templ`, Line: 19, Col: 64}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var2))
 		if templ_7745c5c3_Err != nil {
@@ -60,7 +61,7 @@ func CounterButtons() templ.Component {
 		var templ_7745c5c3_Var3 string
 		templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(datastar.PostSSE("/counter/increment/user"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `features/counter/pages/counter.templ`, Line: 24, Col: 62}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `features/counter/pages/counter.templ`, Line: 25, Col: 62}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 		if templ_7745c5c3_Err != nil {
@@ -131,7 +132,7 @@ func Counter(signals CounterSignals) templ.Component {
 		var templ_7745c5c3_Var6 string
 		templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(templ.JSONString(signals))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `features/counter/pages/counter.templ`, Line: 47, Col: 42}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `features/counter/pages/counter.templ`, Line: 48, Col: 42}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 		if templ_7745c5c3_Err != nil {
@@ -190,30 +191,26 @@ func CounterPage() templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = components.Navigation(components.PageCounter).Render(ctx, templ_7745c5c3_Buffer)
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, " <article class=\"prose mx-auto m-2\"><div id=\"container\" data-init=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "<div class=\"flex flex-col gap-6\"><h1 class=\"text-3xl font-bold tracking-tight\">Counter</h1><div class=\"card bg-base-100 shadow-sm border border-base-300\"><div class=\"card-body\"><div id=\"container\" data-init=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var9 string
 			templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(datastar.GetSSE("/counter/data"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `features/counter/pages/counter.templ`, Line: 59, Col: 67}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `features/counter/pages/counter.templ`, Line: 63, Col: 69}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "\"></div></article>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "\"></div></div></div></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = layouts.Base("Counter").Render(templ.WithChildren(ctx, templ_7745c5c3_Var8), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = layouts.Dashboard("Counter", components.PageCounter, auth.GetUserFromContext(ctx)).Render(templ.WithChildren(ctx, templ_7745c5c3_Var8), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

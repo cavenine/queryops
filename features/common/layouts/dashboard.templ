@@ -1,0 +1,56 @@
+package layouts
+
+import (
+	"queryops/config"
+	"queryops/web/resources"
+	"queryops/features/common/components"
+	"queryops/features/auth/services"
+)
+
+templ Dashboard(title string, page components.Page, user *services.User) {
+	<!DOCTYPE html>
+	<html lang="en" class="bg-base-100 h-full">
+		<head>
+			<title>{ title }</title>
+			<meta name="viewport" content="width=device-width, initial-scale=1"/>
+			<link rel="preconnect" href="https://fonts.googleapis.com"/>
+			<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+			<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+			<script src={ resources.StaticPath("libs/iconify-icon.min.js") }></script>
+			<link rel="icon" type="image/x-icon" href={ resources.StaticPath("assets/favicon.ico") }/>
+			<script defer type="module" src={ resources.StaticPath("datastar/datastar.js") }></script>
+			<script defer src={ resources.StaticPath("antibot.js") }></script>
+			<link href={ resources.StaticPath("index.css") } rel="stylesheet" type="text/css"/>
+			<style>
+				body { font-family: 'Inter', sans-serif; }
+			</style>
+		</head>
+		<body class="h-full bg-base-100 text-base-content antialiased">
+			if config.Global.Environment == config.Dev {
+				<div data-init="@get('/reload', {retryMaxCount: 1000, retryInterval:20, retryMaxWaitMs:200})"></div>
+			}
+
+			<div class="drawer lg:drawer-open">
+				<input id="main-drawer" type="checkbox" class="drawer-toggle" />
+				
+				<div class="drawer-content flex flex-col h-screen overflow-hidden bg-base-100">
+					<!-- Mobile Header -->
+					@components.MobileHeader(title)
+					
+					<!-- Main Content -->
+					<main class="flex-1 overflow-y-auto p-4 lg:p-8 bg-base-100">
+						<div class="max-w-6xl mx-auto w-full">
+							{ children... }
+						</div>
+					</main>
+				</div>
+				
+				<!-- Sidebar (Drawer Side) -->
+				<div class="drawer-side z-40 border-r border-base-300">
+					<label for="main-drawer" aria-label="close sidebar" class="drawer-overlay"></label>
+					@components.Sidebar(page, user)
+				</div>
+			</div>
+		</body>
+	</html>
+}
