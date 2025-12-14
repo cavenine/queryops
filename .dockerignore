@@ -1,0 +1,32 @@
+# Keep Docker build context small and cache-friendly
+
+# Git / CI
+.git
+.github
+
+# Local env/secrets
+.env
+.env.*
+
+# Docs and repo meta
+README.md
+LICENSE
+
+# Local tooling/runtime
+.kamal
+.beads
+
+# Build outputs
+bin
+/tmp
+/tmp/**
+tmp
+*.log
+
+# Go build caches (shouldn't be in repo, but ignore just in case)
+**/.cache
+
+# Generated web assets (rebuilt in Dockerfile)
+web/resources/static/index.css
+web/resources/static/libs
+web/resources/static/libs/**

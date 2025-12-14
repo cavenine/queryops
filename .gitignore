@@ -19,6 +19,7 @@
 
 !README.md
 !LICENSE
+!.dockerignore
 
 # GitHub Actions workflows
 !.github/workflows/*.yml

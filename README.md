@@ -89,7 +89,7 @@ docker run --rm -e DATABASE_URL="$DATABASE_URL" queryops:latest migrate up
 ### GitHub Container Registry (GHCR)
 
 Image name:
-- `ghcr.io/cavenine/queryops`
+- `ghcr.io/<owner>/<repo>` (commonly mirrors GitHub repo name)
 
 Local build + push (mutable tags for convenience):
 
@@ -97,16 +97,17 @@ Local build + push (mutable tags for convenience):
 # PAT (classic) recommended scopes: write:packages
 export GHCR_TOKEN=YOUR_TOKEN
 
-# optionally override (defaults in Taskfile.yml)
-export GHCR_USERNAME=cavenine
+# Required variables (Taskfile.yml also loads .env if present)
+export GHCR_USERNAME=<github-username>
+export GHCR_IMAGE=ghcr.io/<owner>/<repo>
 
-# pushes ghcr.io/cavenine/queryops:latest and :dev-<git-sha>
+# pushes :latest and :dev-<git-sha>
 go tool task ghcr:publish
 ```
 
 CI publish (immutable, release-tagged):
 - Create/publish a GitHub Release with a tag like `v1.2.3`.
-- The workflow publishes `ghcr.io/cavenine/queryops:v1.2.3`.
+- The workflow publishes `ghcr.io/<owner>/<repo>:v1.2.3`.
 
 Private image pulls (e.g. DigitalOcean VM / Kamal):
 - Use a PAT (classic) with `read:packages`.
@@ -141,7 +142,7 @@ Create an `A` record for your app hostname pointing at the droplet IP, e.g.:
 ### 4) Configure Kamal
 
 Edit `config/deploy.yml`:
-- Confirm `image` (defaults to `ghcr.io/cavenine/queryops`)
+- Set `image` to your GHCR image (e.g. `ghcr.io/<owner>/<repo>`)
 - Replace `1.2.3.4` with your droplet IP
 - Replace `queryops.example.com` with your real hostname
 - Configure registry username/password
