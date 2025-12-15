@@ -19,7 +19,7 @@ go mod tidy
 
 # Development
 
-Live Reload is setup out of the box - powered by [Air](https://github.com/air-verse/air) + [esbuild](cmd/web/build/main.go)
+Live Reload is set up out of the box - powered by [Air](https://github.com/air-verse/air) + [esbuild](cmd/web/build/main.go)
 
 Use the [live task](./Taskfile.yml#L113) from the [Taskfile](https://taskfile.dev/) to start with live reload setup
 
