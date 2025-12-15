@@ -13,6 +13,17 @@ templ Dashboard(title string, page components.Page, user *services.User) {
 		<head>
 			<title>{ title }</title>
 			<meta name="viewport" content="width=device-width, initial-scale=1"/>
+			<!-- Open Graph -->
+			<meta property="og:title" content="QueryOps"/>
+			<meta property="og:description" content="Modern ops dashboard for managing queries, hosts, and configurations"/>
+			<meta property="og:image" content="https://app.queryops.com/static/assets/og-image.jpg"/>
+			<meta property="og:url" content="https://app.queryops.com"/>
+			<meta property="og:type" content="website"/>
+			<!-- Twitter/Discord -->
+			<meta name="twitter:card" content="summary_large_image"/>
+			<meta name="twitter:title" content="QueryOps"/>
+			<meta name="twitter:description" content="Modern ops dashboard for managing queries, hosts, and configurations"/>
+			<meta name="twitter:image" content="https://app.queryops.com/static/assets/og-image.jpg"/>
 			<link rel="preconnect" href="https://fonts.googleapis.com"/>
 			<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 			<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>

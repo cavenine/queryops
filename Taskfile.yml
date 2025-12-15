@@ -65,6 +65,16 @@ tasks:
     cmds:
       - docker buildx build --platform linux/amd64 --tag "$GHCR_IMAGE:latest" --tag "$GHCR_IMAGE:dev-{{.GIT_SHA}}" --push .
 
+  deploy:
+    desc: Publish image and deploy via Kamal
+    deps:
+      - ghcr:publish
+    vars:
+      GIT_SHA:
+        sh: git rev-parse --short HEAD
+    cmds:
+      - kamal deploy --skip-push --version dev-{{.GIT_SHA}}
+
   docker:build:
     desc: Build local Docker image (no push)
     vars:

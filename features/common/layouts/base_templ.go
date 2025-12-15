@@ -47,14 +47,14 @@ func Base(title string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</title><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"><link rel=\"preconnect\" href=\"https://fonts.googleapis.com\"><link rel=\"preconnect\" href=\"https://fonts.gstatic.com\" crossorigin><link href=\"https://fonts.googleapis.com/css2?family=Fira+Code:wght@300..700&family=Inter:wght@100..900&family=Gideon+Roman:ital,wght@0,300;0,400;0,700;0,900;1,300;1,400;1,700;1,900&display=swap\" rel=\"stylesheet\"><script src=\"https://code.iconify.design/iconify-icon/2.1.0/iconify-icon.min.js\"></script><link rel=\"icon\" type=\"image/x-icon\" href=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</title><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"><!-- Open Graph --><meta property=\"og:title\" content=\"QueryOps\"><meta property=\"og:description\" content=\"Modern ops dashboard for managing queries, hosts, and configurations\"><meta property=\"og:image\" content=\"https://app.queryops.com/static/assets/og-image.jpg\"><meta property=\"og:url\" content=\"https://app.queryops.com\"><meta property=\"og:type\" content=\"website\"><!-- Twitter/Discord --><meta name=\"twitter:card\" content=\"summary_large_image\"><meta name=\"twitter:title\" content=\"QueryOps\"><meta name=\"twitter:description\" content=\"Modern ops dashboard for managing queries, hosts, and configurations\"><meta name=\"twitter:image\" content=\"https://app.queryops.com/static/assets/og-image.jpg\"><link rel=\"preconnect\" href=\"https://fonts.googleapis.com\"><link rel=\"preconnect\" href=\"https://fonts.gstatic.com\" crossorigin><link href=\"https://fonts.googleapis.com/css2?family=Fira+Code:wght@300..700&family=Inter:wght@100..900&family=Gideon+Roman:ital,wght@0,300;0,400;0,700;0,900;1,300;1,400;1,700;1,900&display=swap\" rel=\"stylesheet\"><script src=\"https://code.iconify.design/iconify-icon/2.1.0/iconify-icon.min.js\"></script><link rel=\"icon\" type=\"image/x-icon\" href=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var3 templ.SafeURL
 		templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinURLErrs(resources.StaticPath("assets/favicon.ico"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `features/common/layouts/base.templ`, Line: 18, Col: 89}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `features/common/layouts/base.templ`, Line: 29, Col: 89}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 		if templ_7745c5c3_Err != nil {
@@ -67,7 +67,7 @@ func Base(title string) templ.Component {
 		var templ_7745c5c3_Var4 string
 		templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(resources.StaticPath("datastar/datastar.js"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `features/common/layouts/base.templ`, Line: 19, Col: 81}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `features/common/layouts/base.templ`, Line: 30, Col: 81}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 		if templ_7745c5c3_Err != nil {
@@ -80,7 +80,7 @@ func Base(title string) templ.Component {
 		var templ_7745c5c3_Var5 string
 		templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(resources.StaticPath("antibot.js"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `features/common/layouts/base.templ`, Line: 20, Col: 57}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `features/common/layouts/base.templ`, Line: 31, Col: 57}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 		if templ_7745c5c3_Err != nil {
@@ -93,7 +93,7 @@ func Base(title string) templ.Component {
 		var templ_7745c5c3_Var6 templ.SafeURL
 		templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinURLErrs(resources.StaticPath("index.css"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `features/common/layouts/base.templ`, Line: 21, Col: 49}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `features/common/layouts/base.templ`, Line: 32, Col: 49}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 		if templ_7745c5c3_Err != nil {

@@ -49,14 +49,14 @@ func Dashboard(title string, page components.Page, user *services.User) templ.Co
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</title><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"><link rel=\"preconnect\" href=\"https://fonts.googleapis.com\"><link rel=\"preconnect\" href=\"https://fonts.gstatic.com\" crossorigin><link href=\"https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap\" rel=\"stylesheet\"><script src=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</title><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"><!-- Open Graph --><meta property=\"og:title\" content=\"QueryOps\"><meta property=\"og:description\" content=\"Modern ops dashboard for managing queries, hosts, and configurations\"><meta property=\"og:image\" content=\"https://app.queryops.com/static/assets/og-image.jpg\"><meta property=\"og:url\" content=\"https://app.queryops.com\"><meta property=\"og:type\" content=\"website\"><!-- Twitter/Discord --><meta name=\"twitter:card\" content=\"summary_large_image\"><meta name=\"twitter:title\" content=\"QueryOps\"><meta name=\"twitter:description\" content=\"Modern ops dashboard for managing queries, hosts, and configurations\"><meta name=\"twitter:image\" content=\"https://app.queryops.com/static/assets/og-image.jpg\"><link rel=\"preconnect\" href=\"https://fonts.googleapis.com\"><link rel=\"preconnect\" href=\"https://fonts.gstatic.com\" crossorigin><link href=\"https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap\" rel=\"stylesheet\"><script src=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var3 string
 		templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(resources.StaticPath("libs/iconify-icon.min.js"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `features/common/layouts/dashboard.templ`, Line: 19, Col: 65}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `features/common/layouts/dashboard.templ`, Line: 30, Col: 65}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 		if templ_7745c5c3_Err != nil {
@@ -69,7 +69,7 @@ func Dashboard(title string, page components.Page, user *services.User) templ.Co
 		var templ_7745c5c3_Var4 templ.SafeURL
 		templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinURLErrs(resources.StaticPath("assets/favicon.ico"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `features/common/layouts/dashboard.templ`, Line: 20, Col: 89}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `features/common/layouts/dashboard.templ`, Line: 31, Col: 89}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 		if templ_7745c5c3_Err != nil {
@@ -82,7 +82,7 @@ func Dashboard(title string, page components.Page, user *services.User) templ.Co
 		var templ_7745c5c3_Var5 string
 		templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(resources.StaticPath("datastar/datastar.js"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `features/common/layouts/dashboard.templ`, Line: 21, Col: 81}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `features/common/layouts/dashboard.templ`, Line: 32, Col: 81}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 		if templ_7745c5c3_Err != nil {
@@ -95,7 +95,7 @@ func Dashboard(title string, page components.Page, user *services.User) templ.Co
 		var templ_7745c5c3_Var6 string
 		templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(resources.StaticPath("antibot.js"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `features/common/layouts/dashboard.templ`, Line: 22, Col: 57}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `features/common/layouts/dashboard.templ`, Line: 33, Col: 57}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 		if templ_7745c5c3_Err != nil {
@@ -108,7 +108,7 @@ func Dashboard(title string, page components.Page, user *services.User) templ.Co
 		var templ_7745c5c3_Var7 templ.SafeURL
 		templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinURLErrs(resources.StaticPath("index.css"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `features/common/layouts/dashboard.templ`, Line: 23, Col: 49}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `features/common/layouts/dashboard.templ`, Line: 34, Col: 49}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 		if templ_7745c5c3_Err != nil {

@@ -65,6 +65,7 @@ accessories:
       - web
     directories:
       - postgres-data-v18:/var/lib/postgresql
+    port: "5432:5432"
     env:
       clear:
         POSTGRES_USER: queryops
