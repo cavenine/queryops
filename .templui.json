@@ -1,0 +1,7 @@
+{
+  "componentsDir": "features/common/components",
+  "utilsDir": "utils",
+  "moduleName": "queryops",
+  "jsDir": "web/resources/static/templui",
+  "jsPublicPath": "/static/templui"
+}

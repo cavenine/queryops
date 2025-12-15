@@ -2,6 +2,7 @@ package layouts
 
 import (
 	"queryops/config"
+	"queryops/features/common/components/dialog"
 	"queryops/web/resources"
 )
 
@@ -29,6 +30,7 @@ templ Base(title string) {
 			<link rel="icon" type="image/x-icon" href={ resources.StaticPath("assets/favicon.ico") }/>
 			<script defer type="module" src={ resources.StaticPath("datastar/datastar.js") }></script>
 			<script defer src={ resources.StaticPath("antibot.js") }></script>
+			@dialog.Script()
 			<link href={ resources.StaticPath("index.css") } rel="stylesheet" type="text/css"/>
 		</head>
 		<body class="flex flex-col h-screen">

@@ -2,9 +2,13 @@ package pages
 
 import (
 	"github.com/starfederation/datastar-go/datastar"
-	"queryops/features/common/components"
-	"queryops/features/common/layouts"
+
 	"queryops/features/auth"
+	"queryops/features/common/components"
+	"queryops/features/common/components/button"
+	"queryops/features/common/components/card"
+	"queryops/features/common/components/dialog"
+	"queryops/features/common/layouts"
 )
 
 templ IndexPage(title string) {
@@ -17,19 +21,45 @@ templ IndexPage(title string) {
 					<p class="text-base-content/60 mt-1">Manage your deployment tasks and configurations.</p>
 				</div>
 				<div class="flex gap-2">
-					<button class="btn btn-primary btn-sm gap-2">
-						<iconify-icon icon="lucide:plus"></iconify-icon>
-						New Task
-					</button>
+					@dialog.Dialog(dialog.Props{ID: "new-task-dialog"}) {
+						@dialog.Trigger() {
+							@button.Button(button.Props{Size: button.SizeSm}) {
+								<iconify-icon icon="lucide:plus"></iconify-icon>
+								New Task
+							}
+						}
+						@dialog.Content() {
+							@dialog.Header() {
+								@dialog.Title() { New task }
+								@dialog.Description() { This is just a demo dialog. }
+							}
+							<div class="text-sm text-base-content/70">
+								No functionality yet — just validating templui wiring.
+							</div>
+							@dialog.Footer() {
+								@dialog.Close() {
+									@button.Button(button.Props{Size: button.SizeSm, Variant: button.VariantOutline}) {
+										Cancel
+									}
+								}
+								@dialog.Close() {
+									@button.Button(button.Props{Size: button.SizeSm}) {
+										OK
+									}
+								}
+							}
+						}
+					}
 				</div>
 			</div>
 
+
 			<!-- Tasks Card -->
-			<div class="card bg-base-100 shadow-sm border border-base-300">
-				<div class="card-body p-0">
+			@card.Card(card.Props{Class: "shadow-sm"}) {
+				@card.Content(card.ContentProps{Class: "p-0"}) {
 					<div id="todos-container" data-init={ datastar.GetSSE("/api/todos") }></div>
-				</div>
-			</div>
+				}
+			}
 		</div>
 	}
 }

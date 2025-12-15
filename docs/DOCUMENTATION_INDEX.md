@@ -45,6 +45,16 @@ Contains:
 ### 3. ANTIBOT.md
 **Lightweight server-validated anti-bot protection**
 
+### 4. TEMPLUI.md
+**How we integrated templui components into QueryOps**
+
+Contains:
+- templui configuration in this repo (`.templui.json`)
+- Where components and JS assets are installed
+- How to wire JS-backed components (e.g. dialog) into layouts
+- Notes on production `hashfs` vs templui script URLs
+- Tailwind/DaisyUI token mapping for templui classnames
+
 Contains:
 - Honeypot + JS token + timing checks
 - How to add protection to new forms
