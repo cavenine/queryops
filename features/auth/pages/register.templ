@@ -1,6 +1,9 @@
 package pages
 
-import "queryops/features/common/layouts"
+import (
+	"queryops/features/common/components/icon"
+	"queryops/features/common/layouts"
+)
 
 templ RegisterPage(email, errorMsg, antibotToken string) {
 	@layouts.Base("Register") {
@@ -8,7 +11,7 @@ templ RegisterPage(email, errorMsg, antibotToken string) {
 			<div class="card w-full max-w-md bg-base-100 shadow-xl border border-base-300/40">
 				<div class="card-body gap-4">
 					<div class="flex items-center justify-center gap-2">
-						<iconify-icon icon="mdi:console" class="text-primary text-2xl" noobserver></iconify-icon>
+						@icon.Terminal(icon.Props{Class: "w-6 h-6 text-primary"})
 						<span class="font-mono text-lg tracking-wide">QueryOps</span>
 					</div>
 					<h2 class="card-title justify-center text-2xl font-semibold tracking-tight">Create Account</h2>

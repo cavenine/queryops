@@ -16,6 +16,7 @@ import (
 	"queryops/features/common/components/button"
 	"queryops/features/common/components/card"
 	"queryops/features/common/components/dialog"
+	"queryops/features/common/components/icon"
 	"queryops/features/common/layouts"
 )
 
@@ -92,7 +93,11 @@ func IndexPage(title string) templ.Component {
 							}()
 						}
 						ctx = templ.InitializeContext(ctx)
-						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<iconify-icon icon=\"lucide:plus\"></iconify-icon> New Task")
+						templ_7745c5c3_Err = icon.Plus(icon.Props{Class: "w-4 h-4"}).Render(ctx, templ_7745c5c3_Buffer)
+						if templ_7745c5c3_Err != nil {
+							return templ_7745c5c3_Err
+						}
+						templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, " New Task")
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
@@ -343,7 +348,7 @@ func IndexPage(title string) templ.Component {
 					var templ_7745c5c3_Var17 string
 					templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.JoinStringErrs(datastar.GetSSE("/api/todos"))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `features/index/pages/index.templ`, Line: 60, Col: 72}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `features/index/pages/index.templ`, Line: 61, Col: 72}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var17))
 					if templ_7745c5c3_Err != nil {

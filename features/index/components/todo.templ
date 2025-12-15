@@ -2,8 +2,11 @@ package components
 
 import (
 	"fmt"
+
 	"github.com/starfederation/datastar-go/datastar"
+
 	common "queryops/features/common/components"
+	"queryops/features/common/components/icon"
 )
 
 type TodoViewMode int
@@ -53,7 +56,7 @@ templ TodosMVCView(mvc *TodoMVC) {
 			<div class="p-4 border-b border-base-300 flex items-center gap-4 bg-base-100/50">
 				<div class="flex-1 relative">
 					<div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-base-content/50">
-						<iconify-icon icon="lucide:plus"></iconify-icon>
+						@icon.Plus(icon.Props{Class: "w-4 h-4"})
 					</div>
 					@TodoInput(-1)
 				</div>
@@ -78,7 +81,7 @@ templ TodosMVCView(mvc *TodoMVC) {
 			<div class="min-h-[300px] bg-base-100">
 				if !hasTodos {
 					<div class="flex flex-col items-center justify-center py-20 text-base-content/40">
-						<iconify-icon icon="lucide:check-circle" class="text-6xl mb-4 text-base-300"></iconify-icon>
+						@icon.CircleCheck(icon.Props{Class: "w-16 h-16 mb-4 text-base-300"})
 						<p class="text-lg font-medium">No tasks found</p>
 						<p class="text-sm">Add a new task above to get started</p>
 					</div>
@@ -184,7 +187,7 @@ templ TodoRow(mode TodoViewMode, todo *Todo, i int, isEditing bool) {
 						data-indicator={ fetchingSignalName }
 						title="Delete task"
 					>
-						<iconify-icon icon="lucide:trash-2"></iconify-icon>
+						@icon.Trash2(icon.Props{Class: "w-4 h-4"})
 					</button>
 				</div>
 			</div>

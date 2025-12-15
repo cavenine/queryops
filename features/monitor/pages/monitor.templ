@@ -2,9 +2,11 @@ package pages
 
 import (
 	"github.com/starfederation/datastar-go/datastar"
-	"queryops/features/common/components"
-	"queryops/features/common/layouts"
+
 	"queryops/features/auth"
+	"queryops/features/common/components"
+	"queryops/features/common/components/icon"
+	"queryops/features/common/layouts"
 )
 
 type SystemMonitorSignals struct {
@@ -32,7 +34,7 @@ templ MonitorPage() {
 					<div class="card-body">
 						<div class="flex items-center gap-2 mb-4">
 							<div class="p-2 bg-primary/10 rounded-lg text-primary">
-								<iconify-icon icon="lucide:memory-stick" class="text-xl"></iconify-icon>
+								@icon.MemoryStick(icon.Props{Class: "w-5 h-5"})
 							</div>
 							<h2 class="card-title text-base">Memory Usage</h2>
 						</div>
@@ -63,7 +65,7 @@ templ MonitorPage() {
 					<div class="card-body">
 						<div class="flex items-center gap-2 mb-4">
 							<div class="p-2 bg-secondary/10 rounded-lg text-secondary">
-								<iconify-icon icon="lucide:cpu" class="text-xl"></iconify-icon>
+								@icon.Cpu(icon.Props{Class: "w-5 h-5"})
 							</div>
 							<h2 class="card-title text-base">CPU Load</h2>
 						</div>

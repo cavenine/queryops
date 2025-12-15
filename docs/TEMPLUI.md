@@ -53,10 +53,13 @@ Example usage patterns:
 ### Button
 
 ```templ
-import "queryops/features/common/components/button"
+import (
+  "queryops/features/common/components/button"
+  "queryops/features/common/components/icon"
+)
 
 @button.Button(button.Props{Size: button.SizeSm}) {
-  <iconify-icon icon="lucide:plus"></iconify-icon>
+  @icon.Plus(icon.Props{Class: "w-4 h-4"})
   New Task
 }
 ```

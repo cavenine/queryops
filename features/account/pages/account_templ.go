@@ -12,6 +12,7 @@ import (
 	"queryops/features/auth"
 	"queryops/features/auth/services"
 	"queryops/features/common/components"
+	"queryops/features/common/components/icon"
 	"queryops/features/common/layouts"
 )
 
@@ -48,30 +49,62 @@ func AccountPage(email string, passkeys []services.PasskeyInfo) templ.Component 
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"flex flex-col gap-6\"><h1 class=\"text-3xl font-bold tracking-tight\">Account Settings</h1><div class=\"grid grid-cols-1 md:grid-cols-2 gap-6\"><!-- Profile Card --><div class=\"card bg-base-100 shadow-sm border border-base-300\"><div class=\"card-body\"><div class=\"flex items-center gap-2 mb-2\"><iconify-icon icon=\"lucide:user\" class=\"text-xl opacity-70\"></iconify-icon><h2 class=\"card-title text-base\">Profile Information</h2></div><div class=\"form-control w-full\"><label class=\"label\"><span class=\"label-text\">Email Address</span></label> <input type=\"text\" value=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"flex flex-col gap-6\"><h1 class=\"text-3xl font-bold tracking-tight\">Account Settings</h1><div class=\"grid grid-cols-1 md:grid-cols-2 gap-6\"><!-- Profile Card --><div class=\"card bg-base-100 shadow-sm border border-base-300\"><div class=\"card-body\"><div class=\"flex items-center gap-2 mb-2\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = icon.User(icon.Props{Class: "w-5 h-5 opacity-70"}).Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<h2 class=\"card-title text-base\">Profile Information</h2></div><div class=\"form-control w-full\"><label class=\"label\"><span class=\"label-text\">Email Address</span></label> <input type=\"text\" value=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var3 string
 			templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(email)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `features/account/pages/account.templ`, Line: 28, Col: 39}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `features/account/pages/account.templ`, Line: 29, Col: 39}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "\" readonly class=\"input input-bordered w-full bg-base-200\"></div></div></div><!-- Security Card --><div class=\"card bg-base-100 shadow-sm border border-base-300\"><div class=\"card-body\"><div class=\"flex items-center justify-between mb-4\"><div class=\"flex items-center gap-2\"><iconify-icon icon=\"lucide:shield-check\" class=\"text-xl opacity-70\"></iconify-icon><h2 class=\"card-title text-base\">Security & Passkeys</h2></div><button type=\"button\" class=\"btn btn-primary btn-sm gap-2\" onclick=\"showAddPasskeyModal()\"><iconify-icon icon=\"lucide:fingerprint\"></iconify-icon> Add Passkey</button></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "\" readonly class=\"input input-bordered w-full bg-base-200\"></div></div></div><!-- Security Card --><div class=\"card bg-base-100 shadow-sm border border-base-300\"><div class=\"card-body\"><div class=\"flex items-center justify-between mb-4\"><div class=\"flex items-center gap-2\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = icon.ShieldCheck(icon.Props{Class: "w-5 h-5 opacity-70"}).Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<h2 class=\"card-title text-base\">Security & Passkeys</h2></div><button type=\"button\" class=\"btn btn-primary btn-sm gap-2\" onclick=\"showAddPasskeyModal()\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = icon.Fingerprint(icon.Props{Class: "w-4 h-4"}).Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "Add Passkey</button></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			if len(passkeys) == 0 {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<div class=\"text-center py-8 text-base-content/60 bg-base-200/50 rounded-lg\"><iconify-icon icon=\"lucide:fingerprint\" class=\"text-4xl mb-2 opacity-50\"></iconify-icon><p class=\"text-sm\">No passkeys registered.</p><p class=\"text-xs mt-1\">Add one to enable passwordless login.</p></div>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "<div class=\"text-center py-8 text-base-content/60 bg-base-200/50 rounded-lg\">")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = icon.Fingerprint(icon.Props{Class: "w-10 h-10 mb-2 opacity-50 mx-auto"}).Render(ctx, templ_7745c5c3_Buffer)
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "<p class=\"text-sm\">No passkeys registered.</p><p class=\"text-xs mt-1\">Add one to enable passwordless login.</p></div>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			} else {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<div class=\"flex flex-col gap-2\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "<div class=\"flex flex-col gap-2\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -81,12 +114,12 @@ func AccountPage(email string, passkeys []services.PasskeyInfo) templ.Component 
 						return templ_7745c5c3_Err
 					}
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "</div>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "</div>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "</div></div></div></div><!-- Add Passkey Modal --> <dialog id=\"add-passkey-modal\" class=\"modal\"><div class=\"modal-box\"><h3 class=\"font-bold text-lg\" id=\"add-passkey-title\">Add Passkey</h3><div id=\"add-passkey-step-1\"><p class=\"py-2 text-sm text-base-content/70\">Give your passkey a name to help you identify it later (e.g., \"MacBook Pro\", \"iPhone\").</p><input type=\"text\" id=\"passkey-nickname\" class=\"input input-bordered w-full mt-2\" placeholder=\"Passkey name (optional)\" maxlength=\"50\"></div><p class=\"py-4 hidden\" id=\"add-passkey-message\">Setting up your passkey...</p><div class=\"modal-action\"><button class=\"btn btn-ghost\" onclick=\"document.getElementById('add-passkey-modal').close()\" id=\"add-passkey-cancel\">Cancel</button> <button class=\"btn btn-primary\" onclick=\"registerPasskey()\" id=\"add-passkey-submit\">Continue</button></div></div><form method=\"dialog\" class=\"modal-backdrop\"><button>close</button></form></dialog><!-- Remove Passkey Confirmation Modal --> <dialog id=\"remove-passkey-modal\" class=\"modal\"><div class=\"modal-box\"><h3 class=\"font-bold text-lg\">Remove Passkey</h3><p class=\"py-4\">Are you sure you want to remove this passkey? You won't be able to use it to sign in anymore.</p><input type=\"hidden\" id=\"remove-passkey-id\" value=\"\"><div class=\"modal-action\"><button class=\"btn btn-ghost\" onclick=\"document.getElementById('remove-passkey-modal').close()\">Cancel</button> <button class=\"btn btn-error\" onclick=\"confirmRemovePasskey()\">Remove</button></div></div><form method=\"dialog\" class=\"modal-backdrop\"><button>close</button></form></dialog><!-- SimpleWebAuthn Browser Library --> <script src=\"https://unpkg.com/@simplewebauthn/browser/dist/bundle/index.umd.min.js\"></script> <script>\n\t\t\tfunction showAddPasskeyModal() {\n\t\t\t\tconst modal = document.getElementById('add-passkey-modal');\n\t\t\t\tconst step1 = document.getElementById('add-passkey-step-1');\n\t\t\t\tconst message = document.getElementById('add-passkey-message');\n\t\t\t\tconst submit = document.getElementById('add-passkey-submit');\n\t\t\t\tconst cancel = document.getElementById('add-passkey-cancel');\n\t\t\t\tconst title = document.getElementById('add-passkey-title');\n\t\t\t\tconst nickname = document.getElementById('passkey-nickname');\n\t\t\t\t\n\t\t\t\t// Reset state\n\t\t\t\tstep1.classList.remove('hidden');\n\t\t\t\tmessage.classList.add('hidden');\n\t\t\t\tsubmit.classList.remove('hidden');\n\t\t\t\tsubmit.textContent = 'Continue';\n\t\t\t\tsubmit.disabled = false;\n\t\t\t\tcancel.textContent = 'Cancel';\n\t\t\t\ttitle.textContent = 'Add Passkey';\n\t\t\t\tnickname.value = '';\n\t\t\t\t\n\t\t\t\tmodal.showModal();\n\t\t\t}\n\t\t\t\n\t\t\tasync function registerPasskey() {\n\t\t\t\tconst modal = document.getElementById('add-passkey-modal');\n\t\t\t\tconst step1 = document.getElementById('add-passkey-step-1');\n\t\t\t\tconst message = document.getElementById('add-passkey-message');\n\t\t\t\tconst submit = document.getElementById('add-passkey-submit');\n\t\t\t\tconst cancel = document.getElementById('add-passkey-cancel');\n\t\t\t\tconst title = document.getElementById('add-passkey-title');\n\t\t\t\tconst nickname = document.getElementById('passkey-nickname').value.trim();\n\t\t\t\t\n\t\t\t\t// Hide step 1, show message\n\t\t\t\tstep1.classList.add('hidden');\n\t\t\t\tmessage.classList.remove('hidden');\n\t\t\t\tmessage.textContent = 'Setting up your passkey...';\n\t\t\t\tmessage.className = 'py-4';\n\t\t\t\tsubmit.classList.add('hidden');\n\t\t\t\t\n\t\t\t\ttry {\n\t\t\t\t\tif (!window.SimpleWebAuthnBrowser) {\n\t\t\t\t\t\tthrow new Error('WebAuthn is not supported in this browser');\n\t\t\t\t\t}\n\t\t\t\t\t\n\t\t\t\t\t// Step 1: Get registration options from server\n\t\t\t\t\tconst beginResp = await fetch('/passkey/register/begin', {\n\t\t\t\t\t\tmethod: 'POST',\n\t\t\t\t\t\theaders: { 'Content-Type': 'application/json' },\n\t\t\t\t\t\tbody: JSON.stringify({ nickname: nickname }),\n\t\t\t\t\t});\n\t\t\t\t\t\n\t\t\t\t\tif (!beginResp.ok) {\n\t\t\t\t\t\tconst data = await beginResp.json();\n\t\t\t\t\t\tthrow new Error(data.error || 'Failed to start registration');\n\t\t\t\t\t}\n\t\t\t\t\t\n\t\t\t\t\tconst options = await beginResp.json();\n\t\t\t\t\t\n\t\t\t\t\tmessage.textContent = 'Please follow the prompts from your browser or device...';\n\t\t\t\t\t\n\t\t\t\t\t// Step 2: Trigger browser's passkey creation UI\n\t\t\t\t\tconst credential = await SimpleWebAuthnBrowser.startRegistration({ optionsJSON: options });\n\t\t\t\t\t\n\t\t\t\t\tmessage.textContent = 'Saving your passkey...';\n\t\t\t\t\t\n\t\t\t\t\t// Step 3: Send credential to server for storage (include nickname)\n\t\t\t\t\tconst finishResp = await fetch('/passkey/register/finish', {\n\t\t\t\t\t\tmethod: 'POST',\n\t\t\t\t\t\theaders: { 'Content-Type': 'application/json' },\n\t\t\t\t\t\tbody: JSON.stringify({ ...credential, nickname: nickname }),\n\t\t\t\t\t});\n\t\t\t\t\t\n\t\t\t\t\tconst result = await finishResp.json();\n\t\t\t\t\t\n\t\t\t\t\tif (!finishResp.ok) {\n\t\t\t\t\t\tthrow new Error(result.error || 'Failed to save passkey');\n\t\t\t\t\t}\n\t\t\t\t\t\n\t\t\t\t\t// Success\n\t\t\t\t\ttitle.textContent = 'Success!';\n\t\t\t\t\tmessage.innerHTML = '<span class=\"text-success\">Your passkey has been added.</span>';\n\t\t\t\t\tcancel.textContent = 'Close';\n\t\t\t\t\t\n\t\t\t\t\t// Reload page after a moment to show the new passkey\n\t\t\t\t\tsetTimeout(() => {\n\t\t\t\t\t\twindow.location.reload();\n\t\t\t\t\t}, 1500);\n\t\t\t\t\t\n\t\t\t\t} catch (err) {\n\t\t\t\t\tconsole.error('Passkey registration error:', err);\n\t\t\t\t\ttitle.textContent = 'Error';\n\t\t\t\t\tmessage.innerHTML = '<span class=\"text-error\">' + (err.message || 'Failed to add passkey') + '</span>';\n\t\t\t\t\tcancel.textContent = 'Close';\n\t\t\t\t}\n\t\t\t}\n\t\t\t\n\t\t\tfunction showRemoveModal(passkeyId) {\n\t\t\t\tdocument.getElementById('remove-passkey-id').value = passkeyId;\n\t\t\t\tdocument.getElementById('remove-passkey-modal').showModal();\n\t\t\t}\n\t\t\t\n\t\t\tasync function confirmRemovePasskey() {\n\t\t\t\tconst passkeyId = document.getElementById('remove-passkey-id').value;\n\t\t\t\tconst modal = document.getElementById('remove-passkey-modal');\n\t\t\t\t\n\t\t\t\ttry {\n\t\t\t\t\tconst resp = await fetch('/account/passkey/' + encodeURIComponent(passkeyId), {\n\t\t\t\t\t\tmethod: 'DELETE',\n\t\t\t\t\t});\n\t\t\t\t\t\n\t\t\t\t\tconst result = await resp.json();\n\t\t\t\t\t\n\t\t\t\t\tif (!resp.ok) {\n\t\t\t\t\t\tthrow new Error(result.error || 'Failed to remove passkey');\n\t\t\t\t\t}\n\t\t\t\t\t\n\t\t\t\t\tmodal.close();\n\t\t\t\t\twindow.location.reload();\n\t\t\t\t\t\n\t\t\t\t} catch (err) {\n\t\t\t\t\talert(err.message || 'Failed to remove passkey');\n\t\t\t\t}\n\t\t\t}\n\t\t</script>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "</div></div></div></div><!-- Add Passkey Modal --> <dialog id=\"add-passkey-modal\" class=\"modal\"><div class=\"modal-box\"><h3 class=\"font-bold text-lg\" id=\"add-passkey-title\">Add Passkey</h3><div id=\"add-passkey-step-1\"><p class=\"py-2 text-sm text-base-content/70\">Give your passkey a name to help you identify it later (e.g., \"MacBook Pro\", \"iPhone\").</p><input type=\"text\" id=\"passkey-nickname\" class=\"input input-bordered w-full mt-2\" placeholder=\"Passkey name (optional)\" maxlength=\"50\"></div><p class=\"py-4 hidden\" id=\"add-passkey-message\">Setting up your passkey...</p><div class=\"modal-action\"><button class=\"btn btn-ghost\" onclick=\"document.getElementById('add-passkey-modal').close()\" id=\"add-passkey-cancel\">Cancel</button> <button class=\"btn btn-primary\" onclick=\"registerPasskey()\" id=\"add-passkey-submit\">Continue</button></div></div><form method=\"dialog\" class=\"modal-backdrop\"><button>close</button></form></dialog><!-- Remove Passkey Confirmation Modal --> <dialog id=\"remove-passkey-modal\" class=\"modal\"><div class=\"modal-box\"><h3 class=\"font-bold text-lg\">Remove Passkey</h3><p class=\"py-4\">Are you sure you want to remove this passkey? You won't be able to use it to sign in anymore.</p><input type=\"hidden\" id=\"remove-passkey-id\" value=\"\"><div class=\"modal-action\"><button class=\"btn btn-ghost\" onclick=\"document.getElementById('remove-passkey-modal').close()\">Cancel</button> <button class=\"btn btn-error\" onclick=\"confirmRemovePasskey()\">Remove</button></div></div><form method=\"dialog\" class=\"modal-backdrop\"><button>close</button></form></dialog><!-- SimpleWebAuthn Browser Library --> <script src=\"https://unpkg.com/@simplewebauthn/browser/dist/bundle/index.umd.min.js\"></script> <script>\n\t\t\tfunction showAddPasskeyModal() {\n\t\t\t\tconst modal = document.getElementById('add-passkey-modal');\n\t\t\t\tconst step1 = document.getElementById('add-passkey-step-1');\n\t\t\t\tconst message = document.getElementById('add-passkey-message');\n\t\t\t\tconst submit = document.getElementById('add-passkey-submit');\n\t\t\t\tconst cancel = document.getElementById('add-passkey-cancel');\n\t\t\t\tconst title = document.getElementById('add-passkey-title');\n\t\t\t\tconst nickname = document.getElementById('passkey-nickname');\n\t\t\t\t\n\t\t\t\t// Reset state\n\t\t\t\tstep1.classList.remove('hidden');\n\t\t\t\tmessage.classList.add('hidden');\n\t\t\t\tsubmit.classList.remove('hidden');\n\t\t\t\tsubmit.textContent = 'Continue';\n\t\t\t\tsubmit.disabled = false;\n\t\t\t\tcancel.textContent = 'Cancel';\n\t\t\t\ttitle.textContent = 'Add Passkey';\n\t\t\t\tnickname.value = '';\n\t\t\t\t\n\t\t\t\tmodal.showModal();\n\t\t\t}\n\t\t\t\n\t\t\tasync function registerPasskey() {\n\t\t\t\tconst modal = document.getElementById('add-passkey-modal');\n\t\t\t\tconst step1 = document.getElementById('add-passkey-step-1');\n\t\t\t\tconst message = document.getElementById('add-passkey-message');\n\t\t\t\tconst submit = document.getElementById('add-passkey-submit');\n\t\t\t\tconst cancel = document.getElementById('add-passkey-cancel');\n\t\t\t\tconst title = document.getElementById('add-passkey-title');\n\t\t\t\tconst nickname = document.getElementById('passkey-nickname').value.trim();\n\t\t\t\t\n\t\t\t\t// Hide step 1, show message\n\t\t\t\tstep1.classList.add('hidden');\n\t\t\t\tmessage.classList.remove('hidden');\n\t\t\t\tmessage.textContent = 'Setting up your passkey...';\n\t\t\t\tmessage.className = 'py-4';\n\t\t\t\tsubmit.classList.add('hidden');\n\t\t\t\t\n\t\t\t\ttry {\n\t\t\t\t\tif (!window.SimpleWebAuthnBrowser) {\n\t\t\t\t\t\tthrow new Error('WebAuthn is not supported in this browser');\n\t\t\t\t\t}\n\t\t\t\t\t\n\t\t\t\t\t// Step 1: Get registration options from server\n\t\t\t\t\tconst beginResp = await fetch('/passkey/register/begin', {\n\t\t\t\t\t\tmethod: 'POST',\n\t\t\t\t\t\theaders: { 'Content-Type': 'application/json' },\n\t\t\t\t\t\tbody: JSON.stringify({ nickname: nickname }),\n\t\t\t\t\t});\n\t\t\t\t\t\n\t\t\t\t\tif (!beginResp.ok) {\n\t\t\t\t\t\tconst data = await beginResp.json();\n\t\t\t\t\t\tthrow new Error(data.error || 'Failed to start registration');\n\t\t\t\t\t}\n\t\t\t\t\t\n\t\t\t\t\tconst options = await beginResp.json();\n\t\t\t\t\t\n\t\t\t\t\tmessage.textContent = 'Please follow the prompts from your browser or device...';\n\t\t\t\t\t\n\t\t\t\t\t// Step 2: Trigger browser's passkey creation UI\n\t\t\t\t\tconst credential = await SimpleWebAuthnBrowser.startRegistration({ optionsJSON: options });\n\t\t\t\t\t\n\t\t\t\t\tmessage.textContent = 'Saving your passkey...';\n\t\t\t\t\t\n\t\t\t\t\t// Step 3: Send credential to server for storage (include nickname)\n\t\t\t\t\tconst finishResp = await fetch('/passkey/register/finish', {\n\t\t\t\t\t\tmethod: 'POST',\n\t\t\t\t\t\theaders: { 'Content-Type': 'application/json' },\n\t\t\t\t\t\tbody: JSON.stringify({ ...credential, nickname: nickname }),\n\t\t\t\t\t});\n\t\t\t\t\t\n\t\t\t\t\tconst result = await finishResp.json();\n\t\t\t\t\t\n\t\t\t\t\tif (!finishResp.ok) {\n\t\t\t\t\t\tthrow new Error(result.error || 'Failed to save passkey');\n\t\t\t\t\t}\n\t\t\t\t\t\n\t\t\t\t\t// Success\n\t\t\t\t\ttitle.textContent = 'Success!';\n\t\t\t\t\tmessage.innerHTML = '<span class=\"text-success\">Your passkey has been added.</span>';\n\t\t\t\t\tcancel.textContent = 'Close';\n\t\t\t\t\t\n\t\t\t\t\t// Reload page after a moment to show the new passkey\n\t\t\t\t\tsetTimeout(() => {\n\t\t\t\t\t\twindow.location.reload();\n\t\t\t\t\t}, 1500);\n\t\t\t\t\t\n\t\t\t\t} catch (err) {\n\t\t\t\t\tconsole.error('Passkey registration error:', err);\n\t\t\t\t\ttitle.textContent = 'Error';\n\t\t\t\t\tmessage.innerHTML = '<span class=\"text-error\">' + (err.message || 'Failed to add passkey') + '</span>';\n\t\t\t\t\tcancel.textContent = 'Close';\n\t\t\t\t}\n\t\t\t}\n\t\t\t\n\t\t\tfunction showRemoveModal(passkeyId) {\n\t\t\t\tdocument.getElementById('remove-passkey-id').value = passkeyId;\n\t\t\t\tdocument.getElementById('remove-passkey-modal').showModal();\n\t\t\t}\n\t\t\t\n\t\t\tasync function confirmRemovePasskey() {\n\t\t\t\tconst passkeyId = document.getElementById('remove-passkey-id').value;\n\t\t\t\tconst modal = document.getElementById('remove-passkey-modal');\n\t\t\t\t\n\t\t\t\ttry {\n\t\t\t\t\tconst resp = await fetch('/account/passkey/' + encodeURIComponent(passkeyId), {\n\t\t\t\t\t\tmethod: 'DELETE',\n\t\t\t\t\t});\n\t\t\t\t\t\n\t\t\t\t\tconst result = await resp.json();\n\t\t\t\t\t\n\t\t\t\t\tif (!resp.ok) {\n\t\t\t\t\t\tthrow new Error(result.error || 'Failed to remove passkey');\n\t\t\t\t\t}\n\t\t\t\t\t\n\t\t\t\t\tmodal.close();\n\t\t\t\t\twindow.location.reload();\n\t\t\t\t\t\n\t\t\t\t} catch (err) {\n\t\t\t\t\talert(err.message || 'Failed to remove passkey');\n\t\t\t\t}\n\t\t\t}\n\t\t</script>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -121,7 +154,15 @@ func passkeyCard(pk services.PasskeyInfo) templ.Component {
 			templ_7745c5c3_Var4 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "<div class=\"flex items-center justify-between p-4 bg-base-200/50 rounded-lg border border-base-200\"><div class=\"flex items-center gap-3\"><div class=\"p-2 bg-base-200 rounded-full\"><iconify-icon icon=\"lucide:fingerprint\" class=\"text-xl opacity-70\"></iconify-icon></div><div><div class=\"font-medium text-sm\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "<div class=\"flex items-center justify-between p-4 bg-base-200/50 rounded-lg border border-base-200\"><div class=\"flex items-center gap-3\"><div class=\"p-2 bg-base-200 rounded-full flex items-center justify-center\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = icon.Fingerprint(icon.Props{Class: "w-5 h-5 opacity-70"}).Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "</div><div><div class=\"font-medium text-sm\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -129,64 +170,72 @@ func passkeyCard(pk services.PasskeyInfo) templ.Component {
 			var templ_7745c5c3_Var5 string
 			templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(pk.Nickname)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `features/account/pages/account.templ`, Line: 250, Col: 19}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `features/account/pages/account.templ`, Line: 251, Col: 19}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "Passkey")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "Passkey")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "</div><div class=\"text-xs text-base-content/50\">Added ")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "</div><div class=\"text-xs text-base-content/50\">Added ")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var6 string
 		templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(pk.CreatedAt.Format("Jan 2, 2006"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `features/account/pages/account.templ`, Line: 256, Col: 47}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `features/account/pages/account.templ`, Line: 257, Col: 47}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, " ")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, " ")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if pk.LastUsedAt != nil {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "· Used ")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "· Used ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var7 string
 			templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(pk.LastUsedAt.Format("Jan 2, 2006"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `features/account/pages/account.templ`, Line: 258, Col: 52}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `features/account/pages/account.templ`, Line: 259, Col: 52}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "</div></div></div><button type=\"button\" class=\"btn btn-ghost btn-sm btn-square text-error/70 hover:text-error hover:bg-error/10\" data-passkey-id=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "</div></div></div><button type=\"button\" class=\"btn btn-ghost btn-sm btn-square text-error/70 hover:text-error hover:bg-error/10\" data-passkey-id=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var8 string
 		templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(pk.ID)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `features/account/pages/account.templ`, Line: 266, Col: 26}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `features/account/pages/account.templ`, Line: 267, Col: 26}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "\" onclick=\"showRemoveModal(this.dataset.passkeyId)\" title=\"Remove passkey\"><iconify-icon icon=\"lucide:trash-2\"></iconify-icon></button></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "\" onclick=\"showRemoveModal(this.dataset.passkeyId)\" title=\"Remove passkey\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = icon.Trash2(icon.Props{Class: "w-4 h-4"}).Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "</button></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

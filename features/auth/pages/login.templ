@@ -1,6 +1,9 @@
 package pages
 
-import "queryops/features/common/layouts"
+import (
+	"queryops/features/common/components/icon"
+	"queryops/features/common/layouts"
+)
 
 templ LoginPage(email, errorMsg string) {
 	@layouts.Base("Login") {
@@ -8,7 +11,7 @@ templ LoginPage(email, errorMsg string) {
 			<div class="card w-full max-w-md bg-base-100 shadow-xl border border-base-300/40">
 				<div class="card-body gap-4">
 					<div class="flex items-center justify-center gap-2">
-						<iconify-icon icon="mdi:console" class="text-primary text-2xl" noobserver></iconify-icon>
+						@icon.Terminal(icon.Props{Class: "w-6 h-6 text-primary"})
 						<span class="font-mono text-lg tracking-wide">QueryOps</span>
 					</div>
 					<h2 class="card-title justify-center text-2xl font-semibold tracking-tight">Login</h2>
@@ -28,8 +31,11 @@ templ LoginPage(email, errorMsg string) {
 						class="btn btn-outline btn-primary w-full gap-2"
 						onclick="loginWithPasskey()"
 					>
-						<iconify-icon icon="mdi:fingerprint" class="text-xl" noobserver></iconify-icon>
-						Sign in with Passkey
+						<span id="passkey-login-spinner" class="loading loading-spinner loading-sm hidden"></span>
+						<span id="passkey-login-icon">
+							@icon.Fingerprint(icon.Props{Class: "w-5 h-5"})
+						</span>
+						<span id="passkey-login-text">Sign in with Passkey</span>
 					</button>
 					<div class="divider">OR</div>
 					<form method="POST" action="/login" class="space-y-4">
@@ -78,11 +84,16 @@ templ LoginPage(email, errorMsg string) {
 				const btn = document.getElementById('passkey-login-btn');
 				const errorDiv = document.getElementById('passkey-error');
 				const errorMsg = document.getElementById('passkey-error-message');
+				const spinner = document.getElementById('passkey-login-spinner');
+				const icon = document.getElementById('passkey-login-icon');
+				const text = document.getElementById('passkey-login-text');
 				
 				// Reset error state
 				errorDiv.classList.add('hidden');
 				btn.disabled = true;
-				btn.innerHTML = '<span class="loading loading-spinner loading-sm"></span> Authenticating...';
+				spinner.classList.remove('hidden');
+				icon.classList.add('hidden');
+				text.textContent = 'Authenticating...';
 				
 				try {
 					// Check if WebAuthn is supported
@@ -127,9 +138,11 @@ templ LoginPage(email, errorMsg string) {
 					errorMsg.textContent = err.message || 'Passkey authentication failed';
 					errorDiv.classList.remove('hidden');
 					
-					// Reset button
-					btn.disabled = false;
-					btn.innerHTML = '<iconify-icon icon="mdi:fingerprint" class="text-xl" noobserver></iconify-icon> Sign in with Passkey';
+				// Reset button
+				btn.disabled = false;
+				spinner.classList.add('hidden');
+				icon.classList.remove('hidden');
+				text.textContent = 'Sign in with Passkey';
 				}
 			}
 			

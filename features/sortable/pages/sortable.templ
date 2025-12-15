@@ -1,10 +1,11 @@
 package pages
 
 import (
+	"queryops/features/auth"
 	"queryops/features/common/components"
+	"queryops/features/common/components/icon"
 	"queryops/features/common/layouts"
 	"queryops/web/resources"
-	"queryops/features/auth"
 )
 
 templ SortablePage() {
@@ -14,7 +15,7 @@ templ SortablePage() {
 			<p class="text-base-content/60">Drag and drop integration example.</p>
 
 			<div class="alert alert-warning">
-				<iconify-icon icon="lucide:alert-triangle" class="text-xl"></iconify-icon>
+				@icon.TriangleAlert(icon.Props{Class: "w-5 h-5"})
 				<div class="flex flex-col gap-1 text-sm">
 					<span class="font-bold">Library Requirement</span>
 					<span>This example requires `lit` and `SortableJS`. See <a class="link" href="https://github.com/zangster300/northstar/blob/main/web/libs/lit/README.md">README</a>.</span>

@@ -10,8 +10,10 @@ import templruntime "github.com/a-h/templ/runtime"
 
 import (
 	"github.com/starfederation/datastar-go/datastar"
+
 	"queryops/features/auth"
 	"queryops/features/common/components"
+	"queryops/features/common/components/icon"
 	"queryops/features/common/layouts"
 )
 
@@ -64,13 +66,29 @@ func MonitorPage() templ.Component {
 			var templ_7745c5c3_Var3 string
 			templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(datastar.GetSSE("/monitor/events"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `features/monitor/pages/monitor.templ`, Line: 26, Col: 50}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `features/monitor/pages/monitor.templ`, Line: 28, Col: 50}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "\" data-signals=\"{memTotal:'', memUsed:'', memUsedPercent:'', cpuUser:'', cpuSystem:'', cpuIdle:''}\" class=\"grid grid-cols-1 md:grid-cols-2 gap-6\"><!-- Memory Card --><div class=\"card bg-base-100 shadow-sm border border-base-300\"><div class=\"card-body\"><div class=\"flex items-center gap-2 mb-4\"><div class=\"p-2 bg-primary/10 rounded-lg text-primary\"><iconify-icon icon=\"lucide:memory-stick\" class=\"text-xl\"></iconify-icon></div><h2 class=\"card-title text-base\">Memory Usage</h2></div><div class=\"flex flex-col gap-3\"><div class=\"flex justify-between items-end\"><span class=\"text-sm opacity-70\">Used Percentage</span> <span class=\"text-2xl font-mono\" data-text=\"$memUsedPercent\">0%</span></div><progress class=\"progress progress-primary w-full\" data-attr:value=\"$memUsedPercent.replace('%','')\" max=\"100\"></progress><div class=\"grid grid-cols-2 gap-4 mt-2\"><div class=\"flex flex-col\"><span class=\"text-xs opacity-60 uppercase tracking-wider\">Total</span> <span class=\"font-mono\" data-text=\"$memTotal\"></span></div><div class=\"flex flex-col\"><span class=\"text-xs opacity-60 uppercase tracking-wider\">Used</span> <span class=\"font-mono\" data-text=\"$memUsed\"></span></div></div></div></div></div><!-- CPU Card --><div class=\"card bg-base-100 shadow-sm border border-base-300\"><div class=\"card-body\"><div class=\"flex items-center gap-2 mb-4\"><div class=\"p-2 bg-secondary/10 rounded-lg text-secondary\"><iconify-icon icon=\"lucide:cpu\" class=\"text-xl\"></iconify-icon></div><h2 class=\"card-title text-base\">CPU Load</h2></div><div class=\"flex flex-col gap-3\"><div class=\"flex justify-between items-center border-b border-base-200 pb-2\"><span class=\"text-sm opacity-70\">User</span> <span class=\"font-mono\" data-text=\"$cpuUser\"></span></div><div class=\"flex justify-between items-center border-b border-base-200 pb-2\"><span class=\"text-sm opacity-70\">System</span> <span class=\"font-mono\" data-text=\"$cpuSystem\"></span></div><div class=\"flex justify-between items-center\"><span class=\"text-sm opacity-70\">Idle</span> <span class=\"font-mono\" data-text=\"$cpuIdle\"></span></div></div></div></div></div></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "\" data-signals=\"{memTotal:'', memUsed:'', memUsedPercent:'', cpuUser:'', cpuSystem:'', cpuIdle:''}\" class=\"grid grid-cols-1 md:grid-cols-2 gap-6\"><!-- Memory Card --><div class=\"card bg-base-100 shadow-sm border border-base-300\"><div class=\"card-body\"><div class=\"flex items-center gap-2 mb-4\"><div class=\"p-2 bg-primary/10 rounded-lg text-primary\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = icon.MemoryStick(icon.Props{Class: "w-5 h-5"}).Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "</div><h2 class=\"card-title text-base\">Memory Usage</h2></div><div class=\"flex flex-col gap-3\"><div class=\"flex justify-between items-end\"><span class=\"text-sm opacity-70\">Used Percentage</span> <span class=\"text-2xl font-mono\" data-text=\"$memUsedPercent\">0%</span></div><progress class=\"progress progress-primary w-full\" data-attr:value=\"$memUsedPercent.replace('%','')\" max=\"100\"></progress><div class=\"grid grid-cols-2 gap-4 mt-2\"><div class=\"flex flex-col\"><span class=\"text-xs opacity-60 uppercase tracking-wider\">Total</span> <span class=\"font-mono\" data-text=\"$memTotal\"></span></div><div class=\"flex flex-col\"><span class=\"text-xs opacity-60 uppercase tracking-wider\">Used</span> <span class=\"font-mono\" data-text=\"$memUsed\"></span></div></div></div></div></div><!-- CPU Card --><div class=\"card bg-base-100 shadow-sm border border-base-300\"><div class=\"card-body\"><div class=\"flex items-center gap-2 mb-4\"><div class=\"p-2 bg-secondary/10 rounded-lg text-secondary\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = icon.Cpu(icon.Props{Class: "w-5 h-5"}).Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</div><h2 class=\"card-title text-base\">CPU Load</h2></div><div class=\"flex flex-col gap-3\"><div class=\"flex justify-between items-center border-b border-base-200 pb-2\"><span class=\"text-sm opacity-70\">User</span> <span class=\"font-mono\" data-text=\"$cpuUser\"></span></div><div class=\"flex justify-between items-center border-b border-base-200 pb-2\"><span class=\"text-sm opacity-70\">System</span> <span class=\"font-mono\" data-text=\"$cpuSystem\"></span></div><div class=\"flex justify-between items-center\"><span class=\"text-sm opacity-70\">Idle</span> <span class=\"font-mono\" data-text=\"$cpuIdle\"></span></div></div></div></div></div></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

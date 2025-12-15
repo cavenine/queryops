@@ -2,6 +2,7 @@ package components
 
 import (
 	"queryops/features/auth/services"
+	"queryops/features/common/components/icon"
 )
 
 type Page int
@@ -21,7 +22,7 @@ const (
 templ Sidebar(page Page, user *services.User) {
 	<div class="h-full min-h-screen bg-base-200 text-base-content w-80 p-4 flex flex-col gap-6 border-r border-base-300">
 		<div class="flex items-center gap-3 px-2">
-			<iconify-icon icon="mdi:console" class="text-primary text-2xl" noobserver></iconify-icon>
+			@icon.Terminal(icon.Props{Class: "w-6 h-6 text-primary"})
 			<span class="text-xl font-bold tracking-tight">QueryOps</span>
 		</div>
 
@@ -30,7 +31,7 @@ templ Sidebar(page Page, user *services.User) {
 				<li class="menu-title text-xs font-semibold uppercase opacity-50 tracking-wider mb-2">Management</li>
 				<li>
 					<a href="/" class={ templ.KV("active", page == PageIndex) }>
-						<iconify-icon icon="lucide:check-square" class="text-lg"></iconify-icon>
+						@icon.SquareCheck(icon.Props{Class: "w-5 h-5"})
 						Tasks
 						if page == PageIndex {
 							<span class="badge badge-sm badge-primary ml-auto">Active</span>
@@ -39,20 +40,20 @@ templ Sidebar(page Page, user *services.User) {
 				</li>
 				<li>
 					<a href="#" class={ templ.KV("active", page == PageHosts) }>
-						<iconify-icon icon="lucide:monitor" class="text-lg"></iconify-icon>
+						@icon.Monitor(icon.Props{Class: "w-5 h-5"})
 						Hosts
 						<span class="badge badge-sm badge-ghost ml-auto text-xs">Soon</span>
 					</a>
 				</li>
 				<li>
 					<a href="#" class={ templ.KV("active", page == PageConfigs) }>
-						<iconify-icon icon="lucide:settings-2" class="text-lg"></iconify-icon>
+						@icon.Settings2(icon.Props{Class: "w-5 h-5"})
 						Configurations
 					</a>
 				</li>
 				<li>
 					<a href="#" class={ templ.KV("active", page == PageQueries) }>
-						<iconify-icon icon="lucide:terminal" class="text-lg"></iconify-icon>
+						@icon.Terminal(icon.Props{Class: "w-5 h-5"})
 						Queries
 					</a>
 				</li>
@@ -60,13 +61,13 @@ templ Sidebar(page Page, user *services.User) {
 				<li class="menu-title text-xs font-semibold uppercase opacity-50 tracking-wider mt-6 mb-2">System</li>
 				<li>
 					<a href="/monitor" class={ templ.KV("active", page == PageMonitor) }>
-						<iconify-icon icon="lucide:activity" class="text-lg"></iconify-icon>
+						@icon.Activity(icon.Props{Class: "w-5 h-5"})
 						Monitoring
 					</a>
 				</li>
 				<li>
 					<a href="/counter" class={ templ.KV("active", page == PageCounter) }>
-						<iconify-icon icon="lucide:hash" class="text-lg"></iconify-icon>
+						@icon.Hash(icon.Props{Class: "w-5 h-5"})
 						Counter
 					</a>
 				</li>
@@ -74,7 +75,7 @@ templ Sidebar(page Page, user *services.User) {
 				<li>
 					<details open?={ page == PageReverse || page == PageSortable }>
 						<summary>
-							<iconify-icon icon="lucide:flask-conical" class="text-lg"></iconify-icon>
+							@icon.FlaskConical(icon.Props{Class: "w-5 h-5"})
 							Labs
 						</summary>
 						<ul>
@@ -99,19 +100,19 @@ templ Sidebar(page Page, user *services.User) {
 							<span class="font-bold truncate w-full text-left">{ user.Email }</span>
 							<span class="opacity-60">Admin</span>
 						</div>
-						<iconify-icon icon="lucide:chevron-up" class="ml-auto"></iconify-icon>
+						@icon.ChevronUp(icon.Props{Class: "w-4 h-4 ml-auto"})
 					</div>
 					<ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow-lg bg-base-100 rounded-box w-full mb-2 border border-base-300">
 						<li>
 							<a href="/account">
-								<iconify-icon icon="lucide:user"></iconify-icon>
+								@icon.User(icon.Props{Class: "w-4 h-4"})
 								Profile
 							</a>
 						</li>
 						<li>
 							<form method="POST" action="/logout">
 								<button type="submit" class="w-full text-left flex items-center gap-2 text-error">
-									<iconify-icon icon="lucide:log-out"></iconify-icon>
+									@icon.LogOut(icon.Props{Class: "w-4 h-4"})
 									Logout
 								</button>
 							</form>
@@ -127,7 +128,7 @@ templ MobileHeader(title string) {
 	<div class="navbar bg-base-100 border-b border-base-300 lg:hidden sticky top-0 z-30">
 		<div class="flex-none">
 			<label for="main-drawer" aria-label="open sidebar" class="btn btn-square btn-ghost">
-				<iconify-icon icon="lucide:menu" class="text-2xl"></iconify-icon>
+				@icon.Menu(icon.Props{Class: "w-6 h-6"})
 			</label>
 		</div>
 		<div class="flex-1">

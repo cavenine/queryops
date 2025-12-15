@@ -8,7 +8,10 @@ package pages
 import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
-import "queryops/features/common/layouts"
+import (
+	"queryops/features/common/components/icon"
+	"queryops/features/common/layouts"
+)
 
 func RegisterPage(email, errorMsg, antibotToken string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
@@ -43,56 +46,64 @@ func RegisterPage(email, errorMsg, antibotToken string) templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"flex flex-1 items-center justify-center bg-base-200\"><div class=\"card w-full max-w-md bg-base-100 shadow-xl border border-base-300/40\"><div class=\"card-body gap-4\"><div class=\"flex items-center justify-center gap-2\"><iconify-icon icon=\"mdi:console\" class=\"text-primary text-2xl\" noobserver></iconify-icon> <span class=\"font-mono text-lg tracking-wide\">QueryOps</span></div><h2 class=\"card-title justify-center text-2xl font-semibold tracking-tight\">Create Account</h2>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"flex flex-1 items-center justify-center bg-base-200\"><div class=\"card w-full max-w-md bg-base-100 shadow-xl border border-base-300/40\"><div class=\"card-body gap-4\"><div class=\"flex items-center justify-center gap-2\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = icon.Terminal(icon.Props{Class: "w-6 h-6 text-primary"}).Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<span class=\"font-mono text-lg tracking-wide\">QueryOps</span></div><h2 class=\"card-title justify-center text-2xl font-semibold tracking-tight\">Create Account</h2>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			if errorMsg != "" {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<div class=\"alert alert-error\" role=\"alert\"><span>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<div class=\"alert alert-error\" role=\"alert\"><span>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var3 string
 				templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(errorMsg)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `features/auth/pages/register.templ`, Line: 17, Col: 23}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `features/auth/pages/register.templ`, Line: 20, Col: 23}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "</span></div>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</span></div>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<form method=\"POST\" action=\"/register\" class=\"space-y-4\" data-antibot-token=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "<form method=\"POST\" action=\"/register\" class=\"space-y-4\" data-antibot-token=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var4 string
 			templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(antibotToken)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `features/auth/pages/register.templ`, Line: 20, Col: 95}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `features/auth/pages/register.templ`, Line: 23, Col: 95}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "\"><div class=\"hp-field\" aria-hidden=\"true\"><label class=\"label\" for=\"website\"><span class=\"label-text\">Website</span></label> <input type=\"text\" id=\"website\" name=\"website\" tabindex=\"-1\" autocomplete=\"off\"></div><input type=\"text\" name=\"js_token\" class=\"hp-field\" tabindex=\"-1\" autocomplete=\"off\" required><div class=\"form-control\"><label class=\"label\" for=\"email\"><span class=\"label-text\">Email</span></label> <input type=\"email\" id=\"email\" name=\"email\" value=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "\"><div class=\"hp-field\" aria-hidden=\"true\"><label class=\"label\" for=\"website\"><span class=\"label-text\">Website</span></label> <input type=\"text\" id=\"website\" name=\"website\" tabindex=\"-1\" autocomplete=\"off\"></div><input type=\"text\" name=\"js_token\" class=\"hp-field\" tabindex=\"-1\" autocomplete=\"off\" required><div class=\"form-control\"><label class=\"label\" for=\"email\"><span class=\"label-text\">Email</span></label> <input type=\"email\" id=\"email\" name=\"email\" value=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var5 string
 			templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(email)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `features/auth/pages/register.templ`, Line: 36, Col: 21}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `features/auth/pages/register.templ`, Line: 39, Col: 21}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "\" class=\"input input-bordered w-full\" placeholder=\"you@example.com\" required></div><div class=\"form-control\"><label class=\"label\" for=\"password\"><span class=\"label-text\">Password</span></label> <input type=\"password\" id=\"password\" name=\"password\" class=\"input input-bordered w-full\" placeholder=\"Choose a password\" required></div><div class=\"form-control mt-6\"><button type=\"submit\" class=\"btn btn-primary w-full\">Register</button></div></form><div class=\"divider\">OR</div><p class=\"text-center text-sm\">Already have an account? <a href=\"/login\" class=\"link link-primary\">Login</a></p></div></div></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "\" class=\"input input-bordered w-full\" placeholder=\"you@example.com\" required></div><div class=\"form-control\"><label class=\"label\" for=\"password\"><span class=\"label-text\">Password</span></label> <input type=\"password\" id=\"password\" name=\"password\" class=\"input input-bordered w-full\" placeholder=\"Choose a password\" required></div><div class=\"form-control mt-6\"><button type=\"submit\" class=\"btn btn-primary w-full\">Register</button></div></form><div class=\"divider\">OR</div><p class=\"text-center text-sm\">Already have an account? <a href=\"/login\" class=\"link link-primary\">Login</a></p></div></div></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

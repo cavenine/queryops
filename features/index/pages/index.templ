@@ -8,6 +8,7 @@ import (
 	"queryops/features/common/components/button"
 	"queryops/features/common/components/card"
 	"queryops/features/common/components/dialog"
+	"queryops/features/common/components/icon"
 	"queryops/features/common/layouts"
 )
 
@@ -24,7 +25,7 @@ templ IndexPage(title string) {
 					@dialog.Dialog(dialog.Props{ID: "new-task-dialog"}) {
 						@dialog.Trigger() {
 							@button.Button(button.Props{Size: button.SizeSm}) {
-								<iconify-icon icon="lucide:plus"></iconify-icon>
+								@icon.Plus(icon.Props{Class: "w-4 h-4"})
 								New Task
 							}
 						}
