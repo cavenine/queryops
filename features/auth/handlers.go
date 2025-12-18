@@ -35,6 +35,11 @@ func NewHandlers(userService userService, sessionManager *scs.SessionManager) *H
 	}
 }
 
+// SetAntibot sets the antibot protector (used in tests).
+func (h *Handlers) SetAntibot(protector *antibot.Protector) {
+	h.antibot = protector
+}
+
 // LoginPage renders the login form.
 func (h *Handlers) LoginPage(w http.ResponseWriter, r *http.Request) {
 	if err := pages.LoginPage("", "").Render(r.Context(), w); err != nil {

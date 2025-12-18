@@ -23,11 +23,17 @@ type User struct {
 	Credentials []webauthn.Credential `json:"-"`
 }
 
+// ErrUserNotFound is returned when a user cannot be found.
+var ErrUserNotFound = errors.New("user not found")
+
 // WebAuthnID returns a unique identifier for the user (required by webauthn.User interface).
 // We use the user's database ID encoded as bytes.
 func (u *User) WebAuthnID() []byte {
-	buf := make([]byte, 8)
-	binary.BigEndian.PutUint64(buf, uint64(u.ID))
+	const idBytes = 8
+	buf := make([]byte, idBytes)
+	id := max(0, u.ID)
+	// #nosec G115
+	binary.BigEndian.PutUint64(buf, uint64(id))
 	return buf
 }
 
@@ -62,7 +68,7 @@ func NewUserRepository(pool *pgxpool.Pool) *UserRepository {
 }
 
 // GetByEmail retrieves a user by their email address.
-// Returns nil if no user found.
+// Returns ErrUserNotFound if no user found.
 func (r *UserRepository) GetByEmail(ctx context.Context, email string) (*User, error) {
 	row := r.pool.QueryRow(ctx, `
 		SELECT id, email, password_hash
@@ -73,7 +79,7 @@ func (r *UserRepository) GetByEmail(ctx context.Context, email string) (*User, e
 	user := &User{}
 	if err := row.Scan(&user.ID, &user.Email, &user.PasswordHash); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, nil
+			return nil, ErrUserNotFound
 		}
 		return nil, fmt.Errorf("querying user by email: %w", err)
 	}
@@ -82,7 +88,7 @@ func (r *UserRepository) GetByEmail(ctx context.Context, email string) (*User, e
 }
 
 // GetByID retrieves a user by their ID.
-// Returns nil if no user found.
+// Returns ErrUserNotFound if no user found.
 func (r *UserRepository) GetByID(ctx context.Context, id int) (*User, error) {
 	row := r.pool.QueryRow(ctx, `
 		SELECT id, email, password_hash
@@ -93,7 +99,7 @@ func (r *UserRepository) GetByID(ctx context.Context, id int) (*User, error) {
 	user := &User{}
 	if err := row.Scan(&user.ID, &user.Email, &user.PasswordHash); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, nil
+			return nil, ErrUserNotFound
 		}
 		return nil, fmt.Errorf("querying user by id: %w", err)
 	}
@@ -114,7 +120,7 @@ func (r *UserRepository) Create(ctx context.Context, email, passwordHash string)
 		// Check for unique violation (PostgreSQL error code 23505)
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
-			return nil, fmt.Errorf("email already registered")
+			return nil, errors.New("email already registered")
 		}
 		return nil, fmt.Errorf("creating user: %w", err)
 	}

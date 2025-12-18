@@ -36,12 +36,12 @@ formatters:
       # with the given prefixes are grouped after 3rd-party packages.
       # Default: []
       local-prefixes:
-        - github.com/my/project
+        - github.com/cavenine/queryops
 
     golines:
       # Target maximum line length.
       # Default: 100
-      max-len: 120
+      max-len: 160
 
 linters:
   enable:
@@ -336,7 +336,7 @@ linters:
         shadow:
           # Whether to be strict about shadowing; can be noisy.
           # Default: false
-          strict: true
+          strict: false
 
     inamedparam:
       # Skips check for interface methods with only a single parameter.

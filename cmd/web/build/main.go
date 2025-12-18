@@ -5,9 +5,8 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"github.com/cavenine/queryops/config"
-	"github.com/cavenine/queryops/web/resources"
 	"log/slog"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -15,36 +14,40 @@ import (
 
 	"github.com/evanw/esbuild/pkg/api"
 	"golang.org/x/sync/errgroup"
-)
 
-var (
-	watch = false
+	"github.com/cavenine/queryops/config"
+	"github.com/cavenine/queryops/web/resources"
 )
 
 func main() {
-	flag.BoolVar(&watch, "watch", watch, "Enable watcher mode")
-	flag.Parse()
-
-	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM, syscall.SIGKILL)
-	defer stop()
-
-	if err := run(ctx); err != nil {
+	if err := runMain(); err != nil {
 		slog.Error("failure", "error", err)
 		os.Exit(1)
 	}
 }
 
-func run(ctx context.Context) error {
+func runMain() error {
+	var watch bool
+	flag.BoolVar(&watch, "watch", false, "Enable watcher mode")
+	flag.Parse()
+
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM, syscall.SIGKILL)
+	defer stop()
+
+	return run(ctx, watch)
+}
+
+func run(ctx context.Context, watch bool) error {
 	eg, egctx := errgroup.WithContext(ctx)
 
 	eg.Go(func() error {
-		return build(egctx)
+		return build(egctx, watch)
 	})
 
 	return eg.Wait()
 }
 
-func build(ctx context.Context) error {
+func build(ctx context.Context, watch bool) error {
 	opts := api.BuildOptions{
 		EntryPointsAdvanced: []api.EntryPoint{
 			{
@@ -73,20 +76,9 @@ func build(ctx context.Context) error {
 	}
 
 	if watch {
-		slog.Info("watching...")
+		slog.InfoContext(ctx, "watching...")
 
-		opts.Plugins = append(opts.Plugins, api.Plugin{
-			Name: "hotreload",
-			Setup: func(build api.PluginBuild) {
-				build.OnEnd(func(result *api.BuildResult) (api.OnEndResult, error) {
-					slog.Info("build complete", "errors", len(result.Errors), "warnings", len(result.Warnings))
-					if len(result.Errors) == 0 {
-						http.Get(fmt.Sprintf("http://%s:%s/hotreload", config.Global.Host, config.Global.Port))
-					}
-					return api.OnEndResult{}, nil
-				})
-			},
-		})
+		opts.Plugins = append(opts.Plugins, hotReloadPlugin())
 
 		buildCtx, err := api.Context(opts)
 		if err != nil {
@@ -102,7 +94,7 @@ func build(ctx context.Context) error {
 		return nil
 	}
 
-	slog.Info("building...")
+	slog.InfoContext(ctx, "building...")
 
 	result := api.Build(opts)
 
@@ -115,4 +107,32 @@ func build(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+func hotReloadPlugin() api.Plugin {
+	return api.Plugin{
+		Name: "hotreload",
+		Setup: func(build api.PluginBuild) {
+			build.OnEnd(func(result *api.BuildResult) (api.OnEndResult, error) {
+				slog.Info("build complete", "errors", len(result.Errors), "warnings", len(result.Warnings))
+				if len(result.Errors) == 0 {
+					hostPort := net.JoinHostPort(config.Global.Host, config.Global.Port)
+					url := fmt.Sprintf("http://%s/hotreload", hostPort)
+					// #nosec G107
+					req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, url, nil)
+					if err != nil {
+						slog.Warn("failed to create hotreload request", "error", err)
+						return api.OnEndResult{}, nil
+					}
+					resp, err := http.DefaultClient.Do(req)
+					if err != nil {
+						slog.Warn("failed to trigger hotreload", "error", err)
+					} else {
+						_ = resp.Body.Close()
+					}
+				}
+				return api.OnEndResult{}, nil
+			})
+		},
+	}
 }

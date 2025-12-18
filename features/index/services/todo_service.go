@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/cavenine/queryops/features/index/components"
@@ -30,16 +31,16 @@ func (s *TodoService) GetSessionMVC(ctx context.Context) (string, *components.To
 
 	mvc, err := s.repo.GetMVC(ctx, sessionID)
 	if err != nil {
-		return "", nil, fmt.Errorf("failed to get todo mvc: %w", err)
-	}
+		if errors.Is(err, ErrTodoNotFound) {
+			mvc = &components.TodoMVC{}
+			s.resetMVC(mvc)
 
-	if mvc == nil {
-		mvc = &components.TodoMVC{}
-		s.resetMVC(mvc)
-
-		if err := s.saveMVC(ctx, sessionID, mvc); err != nil {
-			return "", nil, fmt.Errorf("failed to save mvc: %w", err)
+			if saveErr := s.saveMVC(ctx, sessionID, mvc); saveErr != nil {
+				return "", nil, fmt.Errorf("failed to save mvc: %w", saveErr)
+			}
+			return sessionID, mvc, nil
 		}
+		return "", nil, fmt.Errorf("failed to get todo mvc: %w", err)
 	}
 
 	return sessionID, mvc, nil
@@ -96,7 +97,7 @@ func (s *TodoService) DeleteTodo(mvc *components.TodoMVC, index int) {
 	if index >= 0 && index < len(mvc.Todos) {
 		mvc.Todos = append(mvc.Todos[:index], mvc.Todos[index+1:]...)
 	} else if index < 0 {
-		mvc.Todos = lo.Filter(mvc.Todos, func(todo *components.Todo, i int) bool {
+		mvc.Todos = lo.Filter(mvc.Todos, func(todo *components.Todo, _ int) bool {
 			return !todo.Completed
 		})
 	}

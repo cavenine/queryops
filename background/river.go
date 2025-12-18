@@ -50,7 +50,7 @@ type SortWorker struct {
 
 func (w *SortWorker) Work(ctx context.Context, job *river.Job[SortArgs]) error {
 	sort.Strings(job.Args.Strings)
-	fmt.Printf("Sorted strings: %+v\n", job.Args.Strings)
+	slog.InfoContext(ctx, "sorted strings", "strings", job.Args.Strings)
 	return nil
 }
 
@@ -66,7 +66,7 @@ func NewWorkers() *river.Workers {
 // NewClient constructs a River client using the provided pool, workers, and config.
 func NewClient(pool *pgxpool.Pool, workers *river.Workers, cfg *ClientConfig) (*river.Client[pgx.Tx], error) {
 	if pool == nil {
-		return nil, fmt.Errorf("nil pool provided to NewClient")
+		return nil, errors.New("nil pool provided to NewClient")
 	}
 	if cfg == nil {
 		cfg = DefaultClientConfig()
@@ -89,7 +89,7 @@ func NewClient(pool *pgxpool.Pool, workers *river.Workers, cfg *ClientConfig) (*
 // It always migrates to River's latest schema version.
 func MigrateRiver(ctx context.Context, cfg *config.Config) error {
 	if cfg == nil {
-		return fmt.Errorf("config is nil")
+		return errors.New("config is nil")
 	}
 
 	pool, err := db.NewPool(ctx, cfg)
@@ -107,7 +107,7 @@ func MigrateRiver(ctx context.Context, cfg *config.Config) error {
 		return fmt.Errorf("running river migrations: %w", err)
 	}
 
-	slog.Info("river migrations applied")
+	slog.InfoContext(ctx, "river migrations applied")
 	return nil
 }
 
@@ -121,8 +121,8 @@ func RunWorker(ctx context.Context, pool *pgxpool.Pool, cfg *ClientConfig) error
 		return err
 	}
 
-	slog.Info("starting river workers")
-	defer slog.Info("river workers stopped")
+	slog.InfoContext(ctx, "starting river workers")
+	defer slog.InfoContext(ctx, "river workers stopped")
 
 	if err := client.Start(ctx); err != nil && !errors.Is(err, context.Canceled) {
 		return fmt.Errorf("running river workers: %w", err)
@@ -130,7 +130,8 @@ func RunWorker(ctx context.Context, pool *pgxpool.Pool, cfg *ClientConfig) error
 
 	<-ctx.Done()
 
-	stopCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	const stopTimeout = 30 * time.Second
+	stopCtx, cancel := context.WithTimeout(context.Background(), stopTimeout)
 	defer cancel()
 
 	if err := client.Stop(stopCtx); err != nil && !errors.Is(err, context.Canceled) {

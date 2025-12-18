@@ -12,7 +12,7 @@ import (
 )
 
 // AuthFeature holds all auth-related services and handlers.
-type AuthFeature struct {
+type Feature struct {
 	userService     *services.UserService
 	webauthnService *services.WebAuthnService
 	credentialRepo  *services.CredentialRepository
@@ -21,7 +21,7 @@ type AuthFeature struct {
 }
 
 // NewAuthFeature creates a new AuthFeature with all services initialized.
-func NewAuthFeature(sessionManager *scs.SessionManager, pool *pgxpool.Pool) (*AuthFeature, error) {
+func NewAuthFeature(sessionManager *scs.SessionManager, pool *pgxpool.Pool) (*Feature, error) {
 	userRepo := services.NewUserRepository(pool)
 	userService := services.NewUserService(userRepo)
 	credentialRepo := services.NewCredentialRepository(pool)
@@ -34,7 +34,7 @@ func NewAuthFeature(sessionManager *scs.SessionManager, pool *pgxpool.Pool) (*Au
 	handlers := NewHandlers(userService, sessionManager)
 	passkeyHandlers := NewPasskeyHandlers(webauthnService, userService, sessionManager)
 
-	return &AuthFeature{
+	return &Feature{
 		userService:     userService,
 		webauthnService: webauthnService,
 		credentialRepo:  credentialRepo,
@@ -44,17 +44,17 @@ func NewAuthFeature(sessionManager *scs.SessionManager, pool *pgxpool.Pool) (*Au
 }
 
 // UserService returns the user service for use by other packages (e.g., middleware).
-func (f *AuthFeature) UserService() *services.UserService {
+func (f *Feature) UserService() *services.UserService {
 	return f.userService
 }
 
 // CredentialRepo returns the credential repository for use by other packages (e.g., account feature).
-func (f *AuthFeature) CredentialRepo() *services.CredentialRepository {
+func (f *Feature) CredentialRepo() *services.CredentialRepository {
 	return f.credentialRepo
 }
 
 // SetupPublicRoutes registers authentication routes that don't require authentication.
-func (f *AuthFeature) SetupPublicRoutes(router chi.Router) {
+func (f *Feature) SetupPublicRoutes(router chi.Router) {
 	// Standard auth routes
 	router.Get("/login", f.handlers.LoginPage)
 	router.Post("/login", f.handlers.LoginSubmit)
@@ -68,15 +68,8 @@ func (f *AuthFeature) SetupPublicRoutes(router chi.Router) {
 }
 
 // SetupProtectedRoutes registers authentication routes that require the user to be logged in.
-func (f *AuthFeature) SetupProtectedRoutes(router chi.Router) {
+func (f *Feature) SetupProtectedRoutes(router chi.Router) {
 	// Protected passkey registration routes (must be logged in to add a passkey)
 	router.Post("/passkey/register/begin", f.passkeyHandlers.RegisterBegin)
 	router.Post("/passkey/register/finish", f.passkeyHandlers.RegisterFinish)
-}
-
-// NewUserService creates a UserService for use by other packages.
-// Deprecated: Use NewAuthFeature and AuthFeature.UserService() instead.
-func NewUserService(pool *pgxpool.Pool) *services.UserService {
-	userRepo := services.NewUserRepository(pool)
-	return services.NewUserService(userRepo)
 }

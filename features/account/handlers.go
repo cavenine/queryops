@@ -47,7 +47,6 @@ func (h *Handlers) AccountPage(w http.ResponseWriter, r *http.Request) {
 }
 
 // DeletePasskey removes a passkey.
-// DELETE /account/passkey/{id}
 func (h *Handlers) DeletePasskey(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 

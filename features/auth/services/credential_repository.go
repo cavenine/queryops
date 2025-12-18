@@ -18,6 +18,9 @@ type CredentialRepository struct {
 	pool *pgxpool.Pool
 }
 
+// ErrCredentialNotFound is returned when a credential cannot be found.
+var ErrCredentialNotFound = errors.New("credential not found")
+
 // NewCredentialRepository creates a new CredentialRepository.
 func NewCredentialRepository(pool *pgxpool.Pool) *CredentialRepository {
 	return &CredentialRepository{pool: pool}
@@ -87,12 +90,12 @@ func (r *CredentialRepository) GetByUserID(ctx context.Context, userID int) ([]w
 			cloneWarning       bool
 		)
 
-		if err := rows.Scan(
+		if scanErr := rows.Scan(
 			&credID, &publicKey, &attestationType, &transports,
 			&flagUserPresent, &flagUserVerified, &flagBackupEligible, &flagBackupState,
 			&aaguid, &signCount, &cloneWarning,
-		); err != nil {
-			return nil, fmt.Errorf("scanning credential: %w", err)
+		); scanErr != nil {
+			return nil, fmt.Errorf("scanning credential: %w", scanErr)
 		}
 
 		cred := webauthn.Credential{
@@ -121,8 +124,8 @@ func (r *CredentialRepository) GetByUserID(ctx context.Context, userID int) ([]w
 		credentials = append(credentials, cred)
 	}
 
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("iterating credentials: %w", err)
+	if iterateErr := rows.Err(); iterateErr != nil {
+		return nil, fmt.Errorf("iterating credentials: %w", iterateErr)
 	}
 
 	return credentials, nil
@@ -166,7 +169,7 @@ func (r *CredentialRepository) GetByCredentialID(ctx context.Context, credential
 		&userID, &userEmail, &userPasswordHash,
 	); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, nil, nil
+			return nil, nil, ErrCredentialNotFound
 		}
 		return nil, nil, fmt.Errorf("querying credential by id: %w", err)
 	}
@@ -269,8 +272,8 @@ func (r *CredentialRepository) GetPasskeysByUserID(ctx context.Context, userID i
 			lastUsedAt *time.Time
 		)
 
-		if err := rows.Scan(&credID, &nickname, &createdAt, &lastUsedAt); err != nil {
-			return nil, fmt.Errorf("scanning passkey: %w", err)
+		if scanErr := rows.Scan(&credID, &nickname, &createdAt, &lastUsedAt); scanErr != nil {
+			return nil, fmt.Errorf("scanning passkey: %w", scanErr)
 		}
 
 		info := PasskeyInfo{
@@ -285,8 +288,8 @@ func (r *CredentialRepository) GetPasskeysByUserID(ctx context.Context, userID i
 		passkeys = append(passkeys, info)
 	}
 
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("iterating passkeys: %w", err)
+	if iterateErr := rows.Err(); iterateErr != nil {
+		return nil, fmt.Errorf("iterating passkeys: %w", iterateErr)
 	}
 
 	return passkeys, nil

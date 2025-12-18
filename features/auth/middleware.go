@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"errors"
 	"net/http"
 
 	"github.com/cavenine/queryops/features/auth/services"
@@ -43,9 +44,14 @@ func RequireAuth(userService *services.UserService, sessionManager *scs.SessionM
 			}
 
 			user, err := userService.GetByID(r.Context(), userID)
-			if err != nil || user == nil {
-				// Invalid session, destroy it
-				_ = sessionManager.Destroy(r.Context())
+			if err != nil {
+				if errors.Is(err, services.ErrUserNotFound) {
+					// User no longer exists, destroy session
+					_ = sessionManager.Destroy(r.Context())
+					http.Redirect(w, r, "/login", http.StatusSeeOther)
+					return
+				}
+				// Other error, also redirect for safety
 				http.Redirect(w, r, "/login", http.StatusSeeOther)
 				return
 			}

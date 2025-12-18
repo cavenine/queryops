@@ -27,7 +27,7 @@ func NewWebCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "web",
 		Short: "Run the web server",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			ctx := cmd.Context()
 			if err := run(ctx); err != nil && !errors.Is(err, http.ErrServerClosed) {
 				return err
@@ -39,16 +39,15 @@ func NewWebCommand() *cobra.Command {
 }
 
 func run(ctx context.Context) error {
-
-	addr := fmt.Sprintf("%s:%s", config.Global.Host, config.Global.Port)
-	slog.Info("server started", "addr", addr)
-	defer slog.Info("server shutdown complete")
+	addr := net.JoinHostPort(config.Global.Host, config.Global.Port)
+	slog.InfoContext(ctx, "server started", "addr", addr)
+	defer slog.InfoContext(ctx, "server shutdown complete")
 
 	if config.Global.AutoMigrate {
 		if config.Global.DatabaseURL == "" {
-			return fmt.Errorf("AUTO_MIGRATE is true but DATABASE_URL is empty")
+			return errors.New("AUTO_MIGRATE is true but DATABASE_URL is empty")
 		}
-		slog.Info("running automatic database migrations")
+		slog.InfoContext(ctx, "running automatic database migrations")
 		if err := migrations.Up(config.Global.DatabaseURL); err != nil {
 			return fmt.Errorf("running automatic migrations: %w", err)
 		}
@@ -70,9 +69,9 @@ func run(ctx context.Context) error {
 	if config.Global.BackgroundProcessing && config.Global.Environment == config.Dev {
 		clientCfg := background.DefaultClientConfig()
 		eg.Go(func() error {
-			slog.Info("starting in-process river workers")
-			if err := background.RunWorker(egctx, pool, clientCfg); err != nil && !errors.Is(err, context.Canceled) {
-				return fmt.Errorf("river client error: %w", err)
+			slog.InfoContext(egctx, "starting in-process river workers")
+			if runErr := background.RunWorker(egctx, pool, clientCfg); runErr != nil && !errors.Is(runErr, context.Canceled) {
+				return fmt.Errorf("river client error: %w", runErr)
 			}
 			return nil
 		})
@@ -87,21 +86,24 @@ func run(ctx context.Context) error {
 	// Initialize SCS session manager with PostgreSQL backend
 	sessionManager := scs.New()
 	sessionManager.Store = pgxstore.New(pool)
-	sessionManager.Lifetime = 30 * 24 * time.Hour // 30 days
+	const sessionLifetime = 30 * 24 * time.Hour
+	sessionManager.Lifetime = sessionLifetime
 	sessionManager.Cookie.Name = "session"
 	sessionManager.Cookie.Path = "/"
 	sessionManager.Cookie.HttpOnly = true
 	sessionManager.Cookie.Secure = config.Global.Environment == config.Prod
 	sessionManager.Cookie.SameSite = http.SameSiteLaxMode
 
-	if err := router.SetupRoutes(egctx, r, sessionManager, pool); err != nil {
-		return fmt.Errorf("error setting up routes: %w", err)
+	if setupErr := router.SetupRoutes(egctx, r, sessionManager, pool); setupErr != nil {
+		return fmt.Errorf("error setting up routes: %w", setupErr)
 	}
 
+	const readHeaderTimeout = 5 * time.Second
 	srv := &http.Server{
-		Addr:    addr,
-		Handler: r,
-		BaseContext: func(l net.Listener) context.Context {
+		Addr:              addr,
+		Handler:           r,
+		ReadHeaderTimeout: readHeaderTimeout,
+		BaseContext: func(_ net.Listener) context.Context {
 			return egctx
 		},
 		ErrorLog: slog.NewLogLogger(
@@ -111,23 +113,23 @@ func run(ctx context.Context) error {
 	}
 
 	eg.Go(func() error {
-		err := srv.ListenAndServe()
-		if err != nil && !errors.Is(err, http.ErrServerClosed) {
-			return fmt.Errorf("server error: %w", err)
+		if serveErr := srv.ListenAndServe(); serveErr != nil && !errors.Is(serveErr, http.ErrServerClosed) {
+			return fmt.Errorf("server error: %w", serveErr)
 		}
 		return nil
 	})
 
 	eg.Go(func() error {
 		<-egctx.Done()
-		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		const shutdownTimeout = 5 * time.Second
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
 		defer cancel()
 
-		slog.Debug("shutting down server...")
+		slog.DebugContext(egctx, "shutting down server...")
 
-		if err := srv.Shutdown(shutdownCtx); err != nil {
-			slog.Error("error during shutdown", "error", err)
-			return err
+		if shutdownErr := srv.Shutdown(shutdownCtx); shutdownErr != nil {
+			slog.ErrorContext(egctx, "error during shutdown", "error", shutdownErr)
+			return shutdownErr
 		}
 
 		return nil

@@ -83,14 +83,20 @@ func (h *Handlers) MonitorEvents(w http.ResponseWriter, r *http.Request) {
 func (h *Handlers) relativeTime(totalSeconds float64) string {
 	seconds := int64(math.Round(totalSeconds))
 
-	days := seconds / (24 * 3600)
-	seconds %= 24 * 3600
+	const (
+		hoursPerDay      = 24
+		secondsPerHour   = 3600
+		secondsPerMinute = 60
+	)
 
-	hours := seconds / 3600
-	seconds %= 3600
+	days := seconds / (hoursPerDay * secondsPerHour)
+	seconds %= hoursPerDay * secondsPerHour
 
-	minutes := seconds / 60
-	seconds %= 60
+	hours := seconds / secondsPerHour
+	seconds %= secondsPerHour
+
+	minutes := seconds / secondsPerMinute
+	seconds %= secondsPerMinute
 
 	var parts []string
 	if days > 0 {

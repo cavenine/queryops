@@ -18,21 +18,23 @@ type TodoRepository struct {
 	pool *pgxpool.Pool
 }
 
+// ErrTodoNotFound is returned when todo state for a session cannot be found.
+var ErrTodoNotFound = errors.New("todo state not found")
+
 // NewTodoRepository creates a new TodoRepository with the given connection pool.
 func NewTodoRepository(pool *pgxpool.Pool) *TodoRepository {
 	return &TodoRepository{pool: pool}
 }
 
 // GetMVC retrieves the TodoMVC state for the given session ID.
-// It returns nil if no state exists for the session.
+// It returns ErrTodoNotFound if no state exists for the session.
 func (r *TodoRepository) GetMVC(ctx context.Context, sessionID string) (*components.TodoMVC, error) {
 	row := r.pool.QueryRow(ctx, `SELECT state FROM todos WHERE session_id = $1`, sessionID)
 
 	var data []byte
 	if err := row.Scan(&data); err != nil {
-		// Return nil for missing sessions, not an error
 		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, nil
+			return nil, ErrTodoNotFound
 		}
 		return nil, fmt.Errorf("querying todo state: %w", err)
 	}

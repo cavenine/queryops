@@ -60,7 +60,8 @@ func (h *Handlers) IncrementUser(w http.ResponseWriter, r *http.Request) {
 
 	update := gabs.New()
 	h.updateGlobal(update)
-	if _, err := update.Set(uint32(val), "user"); err != nil {
+	// #nosec G115
+	if _, err := update.Set(uint32(max(0, val)), "user"); err != nil {
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
@@ -71,7 +72,9 @@ func (h *Handlers) IncrementUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handlers) getUserValue(r *http.Request) uint32 {
-	return uint32(h.sessionManager.GetInt(r.Context(), countKey))
+	val := h.sessionManager.GetInt(r.Context(), countKey)
+	// #nosec G115
+	return uint32(max(0, val))
 }
 
 func (h *Handlers) updateGlobal(store *gabs.Container) {

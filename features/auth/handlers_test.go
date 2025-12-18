@@ -1,4 +1,4 @@
-package auth
+package auth_test
 
 import (
 	"context"
@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cavenine/queryops/features/auth"
 	"github.com/cavenine/queryops/features/auth/services"
 	"github.com/cavenine/queryops/internal/antibot"
 
@@ -22,11 +23,11 @@ type stubUserService struct {
 	registerCalls int
 }
 
-func (s *stubUserService) Authenticate(ctx context.Context, email, password string) (*services.User, error) {
-	return nil, nil
+func (s *stubUserService) Authenticate(_ context.Context, _, _ string) (*services.User, error) {
+	return nil, services.ErrUserNotFound
 }
 
-func (s *stubUserService) Register(ctx context.Context, email, password string) (*services.User, error) {
+func (s *stubUserService) Register(_ context.Context, email, _ string) (*services.User, error) {
 	s.registerCalls++
 	return &services.User{ID: 123, Email: email}, nil
 }
@@ -38,14 +39,14 @@ func TestRegisterSubmit_AntibotBlocked_NoSideEffects(t *testing.T) {
 	sm.Store = memstore.New()
 
 	us := &stubUserService{}
-	h := NewHandlers(us, sm)
-	h.antibot = antibot.New(sm, antibot.Config{
+	h := auth.NewHandlers(us, sm)
+	h.SetAntibot(antibot.New(sm, antibot.Config{
 		MinDelay:  2 * time.Second,
 		MaxTokens: 5,
 		Now: func() time.Time {
 			return now
 		},
-	})
+	}))
 
 	r := chi.NewRouter()
 	r.Use(sm.LoadAndSave)
@@ -97,14 +98,14 @@ func TestRegisterSubmit_AntibotAllowed_TriggersRegister(t *testing.T) {
 	sm.Store = memstore.New()
 
 	us := &stubUserService{}
-	h := NewHandlers(us, sm)
-	h.antibot = antibot.New(sm, antibot.Config{
+	h := auth.NewHandlers(us, sm)
+	h.SetAntibot(antibot.New(sm, antibot.Config{
 		MinDelay:  2 * time.Second,
 		MaxTokens: 5,
 		Now: func() time.Time {
 			return now
 		},
-	})
+	}))
 
 	r := chi.NewRouter()
 	r.Use(sm.LoadAndSave)

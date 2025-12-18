@@ -1,10 +1,12 @@
-package antibot
+package antibot_test
 
 import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
+
+	"github.com/cavenine/queryops/internal/antibot"
 
 	"github.com/alexedwards/scs/v2"
 	"github.com/alexedwards/scs/v2/memstore"
@@ -16,7 +18,7 @@ func TestProtector_Validate(t *testing.T) {
 	sm := scs.New()
 	sm.Store = memstore.New()
 
-	p := New(sm, Config{
+	p := antibot.New(sm, antibot.Config{
 		MinDelay:  2 * time.Second,
 		MaxTokens: 5,
 		Now: func() time.Time {
@@ -42,7 +44,7 @@ func TestProtector_Validate(t *testing.T) {
 	t.Run("allow", func(t *testing.T) {
 		now = now.Add(3 * time.Second)
 
-		var res Result
+		var res antibot.Result
 		post := sm.LoadAndSave(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			res = p.Validate(r, "register", token, "")
 			w.WriteHeader(http.StatusOK)
@@ -58,7 +60,7 @@ func TestProtector_Validate(t *testing.T) {
 		}
 
 		// Token is single-use.
-		var res2 Result
+		var res2 antibot.Result
 		post2 := sm.LoadAndSave(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			res2 = p.Validate(r, "register", token, "")
 			w.WriteHeader(http.StatusOK)
@@ -69,41 +71,44 @@ func TestProtector_Validate(t *testing.T) {
 		r2.AddCookie(cookie)
 		post2.ServeHTTP(w2, r2)
 
-		if res2.Allowed || res2.Reason != ReasonTokenInvalid {
+		if res2.Allowed || res2.Reason != antibot.ReasonTokenInvalid {
 			t.Fatalf("expected token invalid after use, got allowed=%v reason=%q", res2.Allowed, res2.Reason)
 		}
 	})
 
+	runBlockedCases(t, p, issue, token, sm, &now)
+}
+
+func runBlockedCases(t *testing.T, p *antibot.Protector, issue http.Handler, token string, sm *scs.SessionManager, nowPtr *time.Time) {
 	blockedCases := []struct {
 		name          string
 		useValidToken bool
 		postedToken   string
 		honeypot      string
 		skipDelay     bool
-		reason        Reason
+		reason        antibot.Reason
 	}{
-		{name: "honeypot", useValidToken: true, honeypot: "spam", reason: ReasonHoneypot},
-		{name: "missing_token", postedToken: "", honeypot: "", reason: ReasonTokenMissing},
-		{name: "token_mismatch", postedToken: "bogus", honeypot: "", reason: ReasonTokenInvalid},
-		{name: "too_fast", useValidToken: true, honeypot: "", skipDelay: true, reason: ReasonTooFast},
+		{name: "honeypot", useValidToken: true, honeypot: "spam", reason: antibot.ReasonHoneypot},
+		{name: "missing_token", postedToken: "", honeypot: "", reason: antibot.ReasonTokenMissing},
+		{name: "token_mismatch", postedToken: "bogus", honeypot: "", reason: antibot.ReasonTokenInvalid},
+		{name: "too_fast", useValidToken: true, honeypot: "", skipDelay: true, reason: antibot.ReasonTooFast},
 	}
 
 	for _, tc := range blockedCases {
 		t.Run(tc.name, func(t *testing.T) {
-			now = time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
+			*nowPtr = time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
 
 			// Re-issue a token each time so tests are independent.
-			var tok string
-			rec := httptest.NewRecorder()
-			issue.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/register", nil))
-			cookie := rec.Result().Cookies()[0]
-			tok = token
+			subRec := httptest.NewRecorder()
+			issue.ServeHTTP(subRec, httptest.NewRequest(http.MethodGet, "/register", nil))
+			subCookie := subRec.Result().Cookies()[0]
+			tok := token
 
 			if !tc.skipDelay {
-				now = now.Add(3 * time.Second)
+				*nowPtr = nowPtr.Add(3 * time.Second)
 			}
 
-			var res Result
+			var res antibot.Result
 			post := sm.LoadAndSave(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				postedTok := tc.postedToken
 				if tc.useValidToken {
@@ -115,7 +120,7 @@ func TestProtector_Validate(t *testing.T) {
 
 			w := httptest.NewRecorder()
 			r := httptest.NewRequest(http.MethodPost, "/register", nil)
-			r.AddCookie(cookie)
+			r.AddCookie(subCookie)
 			post.ServeHTTP(w, r)
 
 			if res.Allowed {
@@ -134,7 +139,7 @@ func TestProtector_Issue_TrimsTokens(t *testing.T) {
 	sm := scs.New()
 	sm.Store = memstore.New()
 
-	p := New(sm, Config{
+	p := antibot.New(sm, antibot.Config{
 		MinDelay:  time.Second,
 		MaxTokens: 2,
 		Now: func() time.Time {
@@ -144,7 +149,7 @@ func TestProtector_Issue_TrimsTokens(t *testing.T) {
 
 	var tokensAfter map[string]int64
 	h := sm.LoadAndSave(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		for i := 0; i < 3; i++ {
+		for range 3 {
 			_, err := p.Issue(r.Context(), "register")
 			if err != nil {
 				t.Fatalf("Issue: %v", err)
@@ -152,7 +157,7 @@ func TestProtector_Issue_TrimsTokens(t *testing.T) {
 			now = now.Add(10 * time.Millisecond)
 		}
 
-		v := sm.Get(r.Context(), sessionKey("register"))
+		v := sm.Get(r.Context(), "antibot.register")
 		m, ok := v.(map[string]int64)
 		if !ok {
 			t.Fatalf("expected map in session")

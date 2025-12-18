@@ -52,7 +52,6 @@ func jsonSuccess(w http.ResponseWriter, data any) {
 
 // RegisterBegin starts the passkey registration process.
 // Requires the user to be authenticated.
-// POST /passkey/register/begin
 func (h *PasskeyHandlers) RegisterBegin(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -77,7 +76,6 @@ func (h *PasskeyHandlers) RegisterBegin(w http.ResponseWriter, r *http.Request) 
 
 // RegisterFinish completes the passkey registration process.
 // Requires the user to be authenticated.
-// POST /passkey/register/finish
 func (h *PasskeyHandlers) RegisterFinish(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -123,7 +121,6 @@ func (h *PasskeyHandlers) RegisterFinish(w http.ResponseWriter, r *http.Request)
 
 // LoginBegin starts the passkey login process (discoverable/usernameless).
 // Public endpoint - does not require authentication.
-// POST /passkey/login/begin
 func (h *PasskeyHandlers) LoginBegin(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -141,7 +138,6 @@ func (h *PasskeyHandlers) LoginBegin(w http.ResponseWriter, r *http.Request) {
 
 // LoginFinish completes the passkey login process.
 // Public endpoint - creates a session on success.
-// POST /passkey/login/finish
 func (h *PasskeyHandlers) LoginFinish(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -167,7 +163,7 @@ func (h *PasskeyHandlers) LoginFinish(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Create session for the authenticated user
-	if err := SetSessionUserID(ctx, h.sessionManager, user.ID); err != nil {
+	if sessionErr := SetSessionUserID(ctx, h.sessionManager, user.ID); sessionErr != nil {
 		jsonError(w, "Failed to create session", http.StatusInternalServerError)
 		return
 	}

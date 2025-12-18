@@ -12,7 +12,7 @@ import (
 
 func newMigrator(databaseURL string) (*migrate.Migrate, error) {
 	if databaseURL == "" {
-		return nil, fmt.Errorf("database url is empty; set DATABASE_URL")
+		return nil, errors.New("database url is empty; set DATABASE_URL")
 	}
 
 	src, err := iofs.New(Files, "sql")

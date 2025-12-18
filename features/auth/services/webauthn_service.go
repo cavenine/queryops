@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"encoding/gob"
+	"errors"
 	"fmt"
 	"log/slog"
 
@@ -13,13 +14,14 @@ import (
 	"github.com/go-webauthn/webauthn/webauthn"
 )
 
+//nolint:gochecknoinits // webauthn requires gob registration for session data
 func init() {
 	// Register WebAuthn session data type for gob encoding (used by SCS)
 	gob.Register(&webauthn.SessionData{})
 }
 
 const (
-	// Session keys for storing WebAuthn ceremony data
+	// Session keys for storing WebAuthn ceremony data.
 	webauthnSessionKey = "webauthn_session"
 )
 
@@ -87,11 +89,16 @@ func (s *WebAuthnService) FinishRegistration(ctx context.Context, user *User, re
 
 // FinishRegistrationWithNickname completes the WebAuthn registration ceremony with an optional nickname.
 // Verifies the attestation response and stores the new credential.
-func (s *WebAuthnService) FinishRegistrationWithNickname(ctx context.Context, user *User, response *protocol.ParsedCredentialCreationData, nickname string) (*webauthn.Credential, error) {
+func (s *WebAuthnService) FinishRegistrationWithNickname(
+	ctx context.Context,
+	user *User,
+	response *protocol.ParsedCredentialCreationData,
+	nickname string,
+) (*webauthn.Credential, error) {
 	// Retrieve session data
 	sessionData, ok := s.sessionManager.Get(ctx, webauthnSessionKey).(*webauthn.SessionData)
 	if !ok || sessionData == nil {
-		return nil, fmt.Errorf("no registration session found")
+		return nil, errors.New("no registration session found")
 	}
 
 	// Clear session data regardless of outcome
@@ -111,8 +118,8 @@ func (s *WebAuthnService) FinishRegistrationWithNickname(ctx context.Context, us
 	}
 
 	// Store the new credential with nickname
-	if err := s.credentialRepo.CreateWithNickname(ctx, user.ID, *credential, nickname); err != nil {
-		return nil, fmt.Errorf("storing credential: %w", err)
+	if createErr := s.credentialRepo.CreateWithNickname(ctx, user.ID, *credential, nickname); createErr != nil {
+		return nil, fmt.Errorf("storing credential: %w", createErr)
 	}
 
 	return credential, nil
@@ -138,20 +145,23 @@ func (s *WebAuthnService) FinishDiscoverableLogin(ctx context.Context, response 
 	// Retrieve session data
 	sessionData, ok := s.sessionManager.Get(ctx, webauthnSessionKey).(*webauthn.SessionData)
 	if !ok || sessionData == nil {
-		return nil, fmt.Errorf("no login session found")
+		return nil, errors.New("no login session found")
 	}
 
 	// Clear session data regardless of outcome
 	s.sessionManager.Remove(ctx, webauthnSessionKey)
 
 	// Handler to find user by credential ID during discoverable login
-	handler := func(rawID, userHandle []byte) (webauthn.User, error) {
+	handler := func(rawID, _ []byte) (webauthn.User, error) {
 		cred, user, err := s.credentialRepo.GetByCredentialID(ctx, rawID)
 		if err != nil {
+			if errors.Is(err, ErrCredentialNotFound) {
+				return nil, errors.New("credential not found")
+			}
 			return nil, fmt.Errorf("looking up credential: %w", err)
 		}
 		if cred == nil || user == nil {
-			return nil, fmt.Errorf("credential not found")
+			return nil, errors.New("credential not found")
 		}
 
 		// Load all credentials for this user
@@ -171,9 +181,9 @@ func (s *WebAuthnService) FinishDiscoverableLogin(ctx context.Context, response 
 	}
 
 	// Update sign count to detect cloned authenticators
-	if err := s.credentialRepo.UpdateSignCount(ctx, credential.ID, credential.Authenticator.SignCount); err != nil {
+	if updateErr := s.credentialRepo.UpdateSignCount(ctx, credential.ID, credential.Authenticator.SignCount); updateErr != nil {
 		// Log but don't fail - sign count update is not critical
-		slog.Error("failed to update passkey sign count", "error", err)
+		slog.ErrorContext(ctx, "failed to update passkey sign count", "error", updateErr)
 	}
 
 	// Look up the user again to return

@@ -13,6 +13,8 @@
 .osgrep
 .task
 bin
+downloader
 web/resources/static/index.css
 web/resources/static/libs
 tmp
+opencode.jsonc

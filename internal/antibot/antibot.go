@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"encoding/gob"
 	"errors"
+	"maps"
 	"net/http"
 	"sort"
 	"strings"
@@ -81,7 +82,8 @@ func (p *Protector) Issue(ctx context.Context, formID string) (string, error) {
 	}
 
 	tokens := p.getTokens(ctx, formID)
-	token, err := newToken(32)
+	const tokenSize = 32
+	token, err := newToken(tokenSize)
 	if err != nil {
 		return "", err
 	}
@@ -157,9 +159,7 @@ func (p *Protector) getTokens(ctx context.Context, formID string) map[string]int
 
 	// Defensive copy: avoid mutating a shared map.
 	cpy := make(map[string]int64, len(tokens))
-	for k, v := range tokens {
-		cpy[k] = v
-	}
+	maps.Copy(cpy, tokens)
 	return cpy
 }
 
@@ -175,11 +175,11 @@ func newToken(n int) (string, error) {
 	return base64.RawURLEncoding.EncodeToString(buf), nil
 }
 
-func trimToN(tokens map[string]int64, max int) {
-	if max <= 0 {
+func trimToN(tokens map[string]int64, maxN int) {
+	if maxN <= 0 {
 		return
 	}
-	if len(tokens) <= max {
+	if len(tokens) <= maxN {
 		return
 	}
 
@@ -193,8 +193,8 @@ func trimToN(tokens map[string]int64, max int) {
 	}
 	sort.Slice(pairs, func(i, j int) bool { return pairs[i].ms < pairs[j].ms })
 
-	removeN := len(tokens) - max
-	for i := 0; i < removeN; i++ {
+	removeN := len(tokens) - maxN
+	for i := range removeN {
 		delete(tokens, pairs[i].token)
 	}
 }

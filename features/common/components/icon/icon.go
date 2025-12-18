@@ -41,7 +41,7 @@ func Icon(name string) func(...Props) templ.Component {
 		cacheKey := fmt.Sprintf("%s|s:%d|c:%s|f:%s|sk:%s|sw:%s|cl:%s",
 			name, p.Size, p.Color, p.Fill, p.Stroke, p.StrokeWidth, p.Class)
 
-		return templ.ComponentFunc(func(ctx context.Context, w io.Writer) (err error) {
+		return templ.ComponentFunc(func(_ context.Context, w io.Writer) (err error) {
 			iconMutex.RLock()
 			svg, cached := iconContents[cacheKey]
 			iconMutex.RUnlock()

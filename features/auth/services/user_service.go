@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"golang.org/x/crypto/bcrypt"
@@ -21,13 +22,13 @@ func NewUserService(repo *UserRepository) *UserService {
 // Returns an error if:
 // - email is invalid or already registered
 // - password is empty
-// - database error occurs
+// - database error occurs.
 func (s *UserService) Register(ctx context.Context, email, password string) (*User, error) {
 	if email == "" {
-		return nil, fmt.Errorf("email is required")
+		return nil, errors.New("email is required")
 	}
 	if password == "" {
-		return nil, fmt.Errorf("password is required")
+		return nil, errors.New("password is required")
 	}
 
 	// Check if email already exists
@@ -36,7 +37,7 @@ func (s *UserService) Register(ctx context.Context, email, password string) (*Us
 		return nil, fmt.Errorf("checking email: %w", err)
 	}
 	if exists {
-		return nil, fmt.Errorf("email already registered")
+		return nil, errors.New("email already registered")
 	}
 
 	// Hash password
@@ -58,25 +59,25 @@ func (s *UserService) Register(ctx context.Context, email, password string) (*Us
 // Returns an error if:
 // - user not found
 // - password does not match
-// - database error occurs
+// - database error occurs.
 func (s *UserService) Authenticate(ctx context.Context, email, password string) (*User, error) {
 	if email == "" || password == "" {
-		return nil, fmt.Errorf("email and password required")
+		return nil, errors.New("email and password required")
 	}
 
 	user, err := s.repo.GetByEmail(ctx, email)
 	if err != nil {
+		if errors.Is(err, ErrUserNotFound) {
+			return nil, errors.New("invalid email or password")
+		}
 		return nil, fmt.Errorf("retrieving user: %w", err)
-	}
-	if user == nil {
-		return nil, fmt.Errorf("invalid email or password")
 	}
 
 	// Verify password
 	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password))
 	if err != nil {
 		// Don't reveal whether email exists or password is wrong
-		return nil, fmt.Errorf("invalid email or password")
+		return nil, errors.New("invalid email or password")
 	}
 
 	return user, nil

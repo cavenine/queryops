@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"log/slog"
 	"strconv"
@@ -16,9 +17,9 @@ func NewMigrationCommand() *cobra.Command {
 	root := &cobra.Command{
 		Use:   "migrate",
 		Short: "Run database migrations",
-		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+		PersistentPreRunE: func(_ *cobra.Command, _ []string) error {
 			if config.Global.DatabaseURL == "" {
-				return fmt.Errorf("DATABASE_URL must be set")
+				return errors.New("DATABASE_URL must be set")
 			}
 			return nil
 		},
@@ -39,14 +40,14 @@ func newUpCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "up",
 		Short: "Apply all available migrations",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			if err := migrations.Up(config.Global.DatabaseURL); err != nil {
 				return err
 			}
-			slog.Info("migrations applied")
+			ctx := cmd.Context()
+			slog.InfoContext(ctx, "migrations applied")
 
 			// Always run River's migrations alongside application migrations.
-			ctx := cmd.Context()
 			if err := background.MigrateRiver(ctx, config.Global); err != nil {
 				return err
 			}
@@ -60,7 +61,7 @@ func newDownCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "down",
 		Short: "Roll back migrations",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			steps, err := strconv.Atoi(cmd.Flag("steps").Value.String())
 			if err != nil {
 				return fmt.Errorf("invalid steps: %w", err)
@@ -77,7 +78,7 @@ func newVersionCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "version",
 		Short: "Print current migration version",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			v, dirty, err := migrations.Version(config.Global.DatabaseURL)
 			if err != nil {
 				return err
@@ -93,7 +94,7 @@ func newForceCmd() *cobra.Command {
 		Use:   "force [version]",
 		Short: "Force set migration version",
 		Args:  cobra.ExactArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, args []string) error {
 			v, err := strconv.Atoi(args[0])
 			if err != nil {
 				return fmt.Errorf("invalid version: %w", err)
@@ -108,7 +109,7 @@ func newToCmd() *cobra.Command {
 		Use:   "to [version]",
 		Short: "Migrate to a specific version",
 		Args:  cobra.ExactArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, args []string) error {
 			v64, err := strconv.ParseUint(args[0], 10, 64)
 			if err != nil {
 				return fmt.Errorf("invalid version: %w", err)

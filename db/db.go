@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 
@@ -12,7 +13,7 @@ import (
 
 func NewPool(ctx context.Context, cfg *config.Config) (*pgxpool.Pool, error) {
 	if cfg.DatabaseURL == "" {
-		return nil, fmt.Errorf("database url is empty; set DATABASE_URL")
+		return nil, errors.New("database url is empty; set DATABASE_URL")
 	}
 
 	poolConfig, err := pgxpool.ParseConfig(cfg.DatabaseURL)
@@ -37,7 +38,7 @@ func NewPool(ctx context.Context, cfg *config.Config) (*pgxpool.Pool, error) {
 		return nil, fmt.Errorf("pinging database: %w", err)
 	}
 
-	slog.Debug("database pool initialized")
+	slog.DebugContext(ctx, "database pool initialized")
 
 	return pool, nil
 }
