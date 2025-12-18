@@ -132,6 +132,24 @@ tasks:
     deps:
       - build
 
+  migrate:create:
+    desc: Create a new timestamped migration
+    cmds:
+      - |
+        set -eu
+        name="{{.CLI_ARGS}}"
+        if [ -z "$name" ]; then
+          echo "usage: go tool task migrate:create -- <name>" >&2
+          exit 1
+        fi
+        case "$name" in
+          *" "*)
+            echo "migration name must not contain spaces (use snake_case)" >&2
+            exit 1
+            ;;
+        esac
+        go tool migrate create -ext sql -dir migrations/sql -tz UTC -format 20060102150405 "$name"
+
   migrate:
     cmds:
       - ./bin/queryops migrate up

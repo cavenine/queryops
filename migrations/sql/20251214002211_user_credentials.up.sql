@@ -1,6 +1,6 @@
 -- WebAuthn credentials table for passkey authentication
 -- Users can have multiple passkeys (e.g., laptop TouchID, phone FaceID, YubiKey)
-CREATE TABLE user_credentials (
+CREATE TABLE IF NOT EXISTS user_credentials (
     id SERIAL PRIMARY KEY,
     user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     
@@ -28,5 +28,5 @@ CREATE TABLE user_credentials (
     last_used_at TIMESTAMPTZ
 );
 
-CREATE INDEX idx_user_credentials_user_id ON user_credentials(user_id);
-CREATE INDEX idx_user_credentials_credential_id ON user_credentials(credential_id);
+CREATE INDEX IF NOT EXISTS idx_user_credentials_user_id ON user_credentials(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_credentials_credential_id ON user_credentials(credential_id);

@@ -1,4 +1,4 @@
-CREATE TABLE osquery_configs (
+CREATE TABLE IF NOT EXISTS osquery_configs (
     id SERIAL PRIMARY KEY,
     name TEXT UNIQUE NOT NULL,
     config JSONB NOT NULL,
@@ -6,7 +6,7 @@ CREATE TABLE osquery_configs (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
-ALTER TABLE hosts ADD COLUMN config_id INTEGER REFERENCES osquery_configs(id);
+ALTER TABLE hosts ADD COLUMN IF NOT EXISTS config_id INTEGER REFERENCES osquery_configs(id);
 
 INSERT INTO osquery_configs (name, config) VALUES ('default', '{
     "schedule": {
@@ -19,4 +19,7 @@ INSERT INTO osquery_configs (name, config) VALUES ('default', '{
             "interval": 300
         }
     }
-}');
+}'::jsonb)
+ON CONFLICT (name) DO UPDATE
+SET config = EXCLUDED.config,
+    updated_at = CURRENT_TIMESTAMP;

@@ -164,6 +164,7 @@ tool (
 	github.com/a-h/templ/cmd/templ
 	github.com/air-verse/air
 	github.com/go-delve/delve/cmd/dlv
+	github.com/golang-migrate/migrate/v4/cmd/migrate
 	github.com/go-task/task/v3/cmd/task
 	github.com/hookenz/gotailwind/v4
 	github.com/templui/templui/cmd/templui

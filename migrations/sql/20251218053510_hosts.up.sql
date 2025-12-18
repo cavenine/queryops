@@ -1,5 +1,4 @@
--- migrations/sql/6_hosts.up.sql
-CREATE TABLE hosts (
+CREATE TABLE IF NOT EXISTS hosts (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     host_identifier TEXT UNIQUE NOT NULL,
     node_key TEXT UNIQUE NOT NULL,
@@ -14,4 +13,4 @@ CREATE TABLE hosts (
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
-CREATE INDEX idx_hosts_node_key ON hosts(node_key);
+CREATE INDEX IF NOT EXISTS idx_hosts_node_key ON hosts(node_key);
