@@ -39,10 +39,9 @@ templ Sidebar(page Page, user *services.User) {
 					</a>
 				</li>
 				<li>
-					<a href="#" class={ templ.KV("active", page == PageHosts) }>
+					<a href="/hosts" class={ templ.KV("active", page == PageHosts) }>
 						@icon.Monitor(icon.Props{Class: "w-5 h-5"})
 						Hosts
-						<span class="badge badge-sm badge-ghost ml-auto text-xs">Soon</span>
 					</a>
 				</li>
 				<li>

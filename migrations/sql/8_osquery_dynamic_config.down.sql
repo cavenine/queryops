@@ -1,0 +1,2 @@
+ALTER TABLE hosts DROP COLUMN IF EXISTS config_id;
+DROP TABLE IF EXISTS osquery_configs;

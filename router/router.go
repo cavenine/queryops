@@ -65,6 +65,7 @@ func SetupRoutes(_ context.Context, router chi.Router, sessionManager *scs.Sessi
 
 		auth.SetupProtectedRoutes(r)
 		accountFeature.SetupRoutes(r, auth.CredentialRepo())
+		osqueryFeature.SetupProtectedRoutes(r, pool)
 
 		if setupErr = errors.Join(
 			indexFeature.SetupRoutes(r, sessionManager, pool),

@@ -1,0 +1,116 @@
+package pages
+
+import (
+	"encoding/json"
+
+	"github.com/starfederation/datastar-go/datastar"
+
+	"github.com/cavenine/queryops/features/auth"
+	"github.com/cavenine/queryops/features/common/components"
+	"github.com/cavenine/queryops/features/common/components/icon"
+	"github.com/cavenine/queryops/features/common/layouts"
+	"github.com/cavenine/queryops/features/osquery/services"
+)
+
+templ HostDetailsPage(title string, host *services.Host, results []services.QueryResult) {
+	@layouts.Dashboard(title, components.PageHosts, auth.GetUserFromContext(ctx)) {
+		<div class="flex flex-col gap-6">
+			<div class="flex items-center gap-4">
+				<a href="/hosts" class="btn btn-ghost btn-sm">
+					@icon.ChevronLeft(icon.Props{Class: "w-4 h-4"})
+					Back to Hosts
+				</a>
+				<h1 class="text-3xl font-bold tracking-tight">{ host.HostIdentifier }</h1>
+			</div>
+
+			<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+				<div class="card bg-base-100 shadow-sm border border-base-300">
+					<div class="card-body">
+						<h2 class="card-title text-sm opacity-60">System Information</h2>
+						<div class="flex flex-col gap-2">
+							<div class="flex justify-between">
+								<span class="text-xs font-semibold">OS Version</span>
+								<span class="text-xs">{ string(host.OSVersion) }</span>
+							</div>
+							<!-- Add more fields -->
+						</div>
+					</div>
+				</div>
+			</div>
+
+			@HostResultsTable(host.ID.String(), results)
+		</div>
+	}
+}
+
+templ HostResultsTable(hostID string, results []services.QueryResult) {
+	<div
+		id="host-results-container"
+		data-init={ datastar.GetSSE("/hosts/%s/results", hostID) }
+	>
+		<div class="flex flex-col gap-4">
+			<h2 class="text-xl font-bold">Recent Distributed Queries</h2>
+			<div class="overflow-x-auto bg-base-100 rounded-lg shadow-sm border border-base-300">
+				<table class="table w-full">
+					<thead>
+						<tr>
+							<th>Query</th>
+							<th>Status</th>
+							<th>Results</th>
+							<th>Finished</th>
+						</tr>
+					</thead>
+					<tbody>
+						for _, r := range results {
+							<tr>
+								<td class="font-mono text-xs">{ r.Query }</td>
+								<td>
+									<span class={ "badge badge-sm ", statusBadge(r.Status) }>
+										{ r.Status }
+									</span>
+								</td>
+								<td>
+									if r.Results != nil {
+										<details class="collapse bg-base-200">
+											<summary class="collapse-title text-xs cursor-pointer py-2 min-h-0">View Results</summary>
+											<div class="collapse-content overflow-auto max-h-60">
+												<pre class="text-[10px]">{ formatJSON(r.Results) }</pre>
+											</div>
+										</details>
+									}
+								</td>
+								<td class="text-xs">
+									{ r.UpdatedAt.Format("15:04:05") }
+								</td>
+							</tr>
+						}
+					</tbody>
+				</table>
+			</div>
+		</div>
+	</div>
+}
+
+func statusBadge(status string) string {
+	switch status {
+	case "completed":
+		return "badge-success"
+	case "pending":
+		return "badge-warning"
+	case "sent":
+		return "badge-info"
+	case "failed":
+		return "badge-error"
+	default:
+		return "badge-ghost"
+	}
+}
+
+func formatJSON(raw json.RawMessage) string {
+	var obj any
+	if err := json.Unmarshal(raw, &obj); err != nil {
+		return string(raw)
+	}
+	formatted, _ := json.MarshalIndent(obj, "", "  ")
+	return string(formatted)
+}

@@ -45,6 +45,14 @@ The `task build` [task](./Taskfile.yml#L37) will assemble and build a binary
 
 [Dockerfile](./Dockerfile)
 
+# Osquery Integration
+
+QueryOps provides a full osquery TLS management backend.
+
+- [🔗 Osquery Integration Guide](./docs/osquery.md)
+- Remote enrollment, configuration, and logging
+- Distributed "Live" queries from the dashboard
+
 # References
 
 ## Server

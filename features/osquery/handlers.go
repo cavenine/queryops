@@ -1,11 +1,19 @@
 package osquery
 
 import (
+	"bytes"
 	"encoding/json"
+	"fmt"
 	"log/slog"
 	"net/http"
+	"time"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
+	"github.com/starfederation/datastar-go/datastar"
 
 	"github.com/cavenine/queryops/config"
+	"github.com/cavenine/queryops/features/osquery/pages"
 	"github.com/cavenine/queryops/features/osquery/services"
 )
 
@@ -61,19 +69,20 @@ func (h *Handlers) Config(w http.ResponseWriter, r *http.Request) {
 		slog.Error("failed to update last config", "error", err)
 	}
 
-	// Hardcoded sample config for now
-	resp := ConfigResponse{
-		Schedule: map[string]ScheduledQuery{
-			"processes": {
-				Query:    "SELECT * FROM processes;",
-				Interval: 60,
-			},
-			"os_version": {
-				Query:    "SELECT * FROM os_version;",
-				Interval: 3600,
-			},
-		},
+	configRaw, err := h.repo.GetConfigForHost(r.Context(), req.NodeKey)
+	if err != nil {
+		slog.Error("failed to get config for host", "error", err)
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
 	}
+
+	var resp ConfigResponse
+	if err := json.Unmarshal(configRaw, &resp); err != nil {
+		slog.Error("failed to unmarshal config", "error", err, "raw", string(configRaw))
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+
 	h.jsonResponse(w, resp)
 }
 
@@ -96,6 +105,35 @@ func (h *Handlers) Logger(w http.ResponseWriter, r *http.Request) {
 
 	slog.Info("received logs from host", "host_identifier", host.HostIdentifier, "log_type", req.LogType, "count", len(req.Data))
 
+	for _, raw := range req.Data {
+		if req.LogType == "result" {
+			var log ResultLog
+			if err := json.Unmarshal(raw, &log); err != nil {
+				slog.Error("failed to unmarshal result log", "error", err)
+				continue
+			}
+			ts := time.Unix(int64(log.UnixTime), 0)
+			cols, err := json.Marshal(log.Columns)
+			if err != nil {
+				slog.Error("failed to marshal result log columns", "error", err)
+				continue
+			}
+			if err := h.repo.SaveResultLogs(r.Context(), host.ID, log.Name, log.Action, json.RawMessage(cols), ts); err != nil {
+				slog.Error("failed to save result log", "error", err)
+			}
+		} else if req.LogType == "status" {
+			var log StatusLog
+			if err := json.Unmarshal(raw, &log); err != nil {
+				slog.Error("failed to unmarshal status log", "error", err)
+				continue
+			}
+			ts := time.Unix(int64(log.UnixTime), 0)
+			if err := h.repo.SaveStatusLogs(r.Context(), host.ID, log.Line, log.Message, log.Severity, log.Filename, ts); err != nil {
+				slog.Error("failed to save status log", "error", err)
+			}
+		}
+	}
+
 	h.jsonResponse(w, LoggerResponse{})
 }
 
@@ -116,9 +154,15 @@ func (h *Handlers) DistributedRead(w http.ResponseWriter, r *http.Request) {
 		slog.Error("failed to update last distributed", "error", err)
 	}
 
-	// No distributed queries for now
+	queries, err := h.repo.GetPendingQueries(r.Context(), host.ID)
+	if err != nil {
+		slog.Error("failed to get pending queries", "error", err)
+		h.jsonResponse(w, DistributedReadResponse{Queries: map[string]string{}})
+		return
+	}
+
 	h.jsonResponse(w, DistributedReadResponse{
-		Queries: map[string]string{},
+		Queries: queries,
 	})
 }
 
@@ -135,9 +179,193 @@ func (h *Handlers) DistributedWrite(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	slog.Info("received distributed query results", "host_identifier", host.HostIdentifier, "query_count", len(req.Queries))
+	// osquery reports completion via the `statuses` map. Results may be empty even on success.
+	if len(req.Statuses) == 0 {
+		for queryIDStr, results := range req.Queries {
+			queryID, err := uuid.Parse(queryIDStr)
+			if err != nil {
+				slog.Error("invalid query id", "id", queryIDStr)
+				continue
+			}
+
+			resJSON, err := json.Marshal(results)
+			if err != nil {
+				slog.Error("failed to marshal query results", "error", err)
+				continue
+			}
+			if err := h.repo.SaveQueryResults(r.Context(), host.ID, queryID, "completed", json.RawMessage(resJSON), nil); err != nil {
+				slog.Error("failed to save query results", "error", err)
+			}
+		}
+
+		h.jsonResponse(w, DistributedWriteResponse{})
+		return
+	}
+
+	for queryIDStr, statusCode := range req.Statuses {
+		queryID, err := uuid.Parse(queryIDStr)
+		if err != nil {
+			slog.Error("invalid query id", "id", queryIDStr)
+			continue
+		}
+
+		status := "completed"
+		var errorText *string
+		if statusCode != 0 {
+			status = "failed"
+			s := fmt.Sprintf("osquery status %d", statusCode)
+			errorText = &s
+		}
+
+		var resJSON json.RawMessage
+		if results, ok := req.Queries[queryIDStr]; ok {
+			b, err := json.Marshal(results)
+			if err != nil {
+				slog.Error("failed to marshal query results", "error", err)
+				status = "failed"
+				s := "failed to marshal query results"
+				errorText = &s
+				resJSON = nil
+			} else {
+				resJSON = json.RawMessage(b)
+			}
+		}
+
+		if err := h.repo.SaveQueryResults(r.Context(), host.ID, queryID, status, resJSON, errorText); err != nil {
+			slog.Error("failed to save query results", "error", err)
+		}
+	}
 
 	h.jsonResponse(w, DistributedWriteResponse{})
+}
+
+func (h *Handlers) HostsPage(w http.ResponseWriter, r *http.Request) {
+	hosts, err := h.repo.List(r.Context())
+	if err != nil {
+		slog.Error("failed to list hosts", "error", err)
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+
+	pages.HostsPage("Hosts", hosts).Render(r.Context(), w)
+}
+
+func (h *Handlers) HostDetailsPage(w http.ResponseWriter, r *http.Request) {
+	hostIDStr := chi.URLParam(r, "id")
+	hostID, err := uuid.Parse(hostIDStr)
+	if err != nil {
+		http.Error(w, "invalid host id", http.StatusBadRequest)
+		return
+	}
+
+	host, err := h.repo.GetByID(r.Context(), hostID)
+	if err != nil {
+		slog.Error("failed to get host", "error", err)
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+	if host == nil {
+		http.Error(w, "host not found", http.StatusNotFound)
+		return
+	}
+
+	results, err := h.repo.GetRecentResults(r.Context(), hostID)
+	if err != nil {
+		slog.Error("failed to get recent results", "error", err)
+	}
+
+	pages.HostDetailsPage(host.HostIdentifier, host, results).Render(r.Context(), w)
+}
+
+func (h *Handlers) HostResultsSSE(w http.ResponseWriter, r *http.Request) {
+	hostIDStr := chi.URLParam(r, "id")
+	hostID, err := uuid.Parse(hostIDStr)
+	if err != nil {
+		http.Error(w, "invalid host id", http.StatusBadRequest)
+		return
+	}
+
+	host, err := h.repo.GetByID(r.Context(), hostID)
+	if err != nil {
+		slog.Error("failed to get host", "error", err)
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+	if host == nil {
+		http.Error(w, "host not found", http.StatusNotFound)
+		return
+	}
+
+	ctx := r.Context()
+	sse := datastar.NewSSE(w, r)
+
+	ticker := time.NewTicker(time.Second)
+	defer ticker.Stop()
+
+	var last []byte
+	for {
+		results, err := h.repo.GetRecentResults(ctx, hostID)
+		if err != nil {
+			_ = sse.ConsoleError(err)
+			return
+		}
+
+		b, err := json.Marshal(results)
+		if err != nil {
+			_ = sse.ConsoleError(err)
+			return
+		}
+		if !bytes.Equal(b, last) {
+			last = b
+			if err := sse.PatchElementTempl(pages.HostResultsTable(hostIDStr, results)); err != nil {
+				return
+			}
+		}
+
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+		}
+	}
+}
+
+func (h *Handlers) RunQuery(w http.ResponseWriter, r *http.Request) {
+	hostIDStr := chi.URLParam(r, "id")
+	hostID, err := uuid.Parse(hostIDStr)
+	if err != nil {
+		http.Error(w, "invalid host id", http.StatusBadRequest)
+		return
+	}
+
+	type Store struct {
+		Query string `json:"query"`
+	}
+	var store Store
+	if err := datastar.ReadSignals(r, &store); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if store.Query == "" {
+		http.Error(w, "query cannot be empty", http.StatusBadRequest)
+		return
+	}
+
+	queryID, err := h.repo.QueueQuery(r.Context(), store.Query, []uuid.UUID{hostID})
+	if err != nil {
+		slog.Error("failed to queue query", "error", err)
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+
+	slog.Info("queued distributed query", "query_id", queryID, "host_id", hostID)
+
+	// Send a script to close the dialog and maybe show a toast
+	sse := datastar.NewSSE(w, r)
+	if err := sse.ExecuteScript(fmt.Sprintf("document.querySelector('[data-tui-dialog-close=\"query-dialog-%s\"]').click()", hostIDStr)); err != nil {
+		return
+	}
 }
 
 func (h *Handlers) jsonResponse(w http.ResponseWriter, data any) {

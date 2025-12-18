@@ -18,3 +18,13 @@ func SetupRoutes(router chi.Router, pool *pgxpool.Pool) {
 		r.Post("/distributed_write", handlers.DistributedWrite)
 	})
 }
+
+func SetupProtectedRoutes(router chi.Router, pool *pgxpool.Pool) {
+	repo := services.NewHostRepository(pool)
+	handlers := NewHandlers(repo)
+
+	router.Get("/hosts", handlers.HostsPage)
+	router.Get("/hosts/{id}", handlers.HostDetailsPage)
+	router.Get("/hosts/{id}/results", handlers.HostResultsSSE)
+	router.Post("/hosts/{id}/query", handlers.RunQuery)
+}

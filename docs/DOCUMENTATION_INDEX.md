@@ -45,6 +45,11 @@ Contains:
 ### 3. ANTIBOT.md
 **Lightweight server-validated anti-bot protection**
 
+Contains:
+- Honeypot + JS token + timing checks
+- How to add protection to new forms
+- DataStar-compatible token injection notes
+
 ### 4. TEMPLUI.md
 **How we integrated templui components into QueryOps**
 
@@ -55,10 +60,15 @@ Contains:
 - Notes on production `hashfs` vs templui script URLs
 - Tailwind/DaisyUI token mapping for templui classnames
 
+### 5. osquery.md
+**Integration and management of osquery agents**
+
 Contains:
-- Honeypot + JS token + timing checks
-- How to add protection to new forms
-- DataStar-compatible token injection notes
+- Overview of TLS remote API implementation
+- Database schema for hosts, logs, and distributed queries
+- Local development setup with `cloudflared`
+- Instructions for running `osqueryd` against the backend
+- Dynamic configuration and live query management
 
 ## Key Findings
 

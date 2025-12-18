@@ -1,0 +1,141 @@
+package pages
+
+import (
+	"fmt"
+	"time"
+
+	"github.com/cavenine/queryops/features/auth"
+	"github.com/cavenine/queryops/features/common/components"
+	"github.com/cavenine/queryops/features/common/components/button"
+	"github.com/cavenine/queryops/features/common/components/dialog"
+	"github.com/cavenine/queryops/features/common/components/icon"
+	"github.com/cavenine/queryops/features/common/layouts"
+	"github.com/cavenine/queryops/features/osquery/services"
+	"github.com/starfederation/datastar-go/datastar"
+)
+
+templ HostsPage(title string, hosts []*services.Host) {
+	@layouts.Dashboard(title, components.PageHosts, auth.GetUserFromContext(ctx)) {
+		<div class="flex flex-col gap-6" data-signals="{query: 'SELECT * FROM uptime;'}">
+			<!-- Header Section -->
+			<div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+				<div>
+					<h1 class="text-3xl font-bold tracking-tight">Hosts</h1>
+					<p class="text-base-content/60 mt-1">Manage and monitor your enrolled osquery nodes.</p>
+				</div>
+			</div>
+
+			<!-- Hosts Table -->
+			<div class="overflow-x-auto bg-base-100 rounded-lg shadow-sm border border-base-300">
+				<table class="table table-zebra w-full">
+					<thead>
+						<tr>
+							<th>Host Identifier</th>
+							<th>Platform</th>
+							<th>Last Seen</th>
+							<th>Status</th>
+							<th>Actions</th>
+						</tr>
+					</thead>
+					<tbody>
+						for _, h := range hosts {
+							<tr>
+								<td>
+									<div class="font-bold">{ h.HostIdentifier }</div>
+									<div class="text-xs opacity-50">{ h.ID.String() }</div>
+								</td>
+								<td>
+									<span class="badge badge-ghost badge-sm">Linux</span>
+								</td>
+								<td>
+									if h.LastLoggerAt != nil {
+										{ timeSince(*h.LastLoggerAt) }
+									} else {
+										Never
+									}
+								</td>
+								<td>
+									if isOnline(h.LastLoggerAt) {
+										<div class="flex items-center gap-2">
+											<div class="w-2 h-2 rounded-full bg-success"></div>
+											<span>Online</span>
+										</div>
+									} else {
+										<div class="flex items-center gap-2">
+											<div class="w-2 h-2 rounded-full bg-error"></div>
+											<span>Offline</span>
+										</div>
+									}
+								</td>
+								<td>
+									<div class="flex gap-2">
+										@dialog.Dialog(dialog.Props{ID: "query-dialog-" + h.ID.String()}) {
+											@dialog.Trigger() {
+												@button.Button(button.Props{Size: button.SizeSm, Variant: button.VariantOutline}) {
+													@icon.Terminal(icon.Props{Class: "w-3 h-3"})
+													Query
+												}
+											}
+											@dialog.Content() {
+												@dialog.Header() {
+													@dialog.Title() { Run Query on { h.HostIdentifier } }
+													@dialog.Description() { Enter the SQL query to run on this host. }
+												}
+												<div class="py-4">
+													<textarea 
+														class="textarea textarea-bordered w-full font-mono text-sm h-32"
+														data-bind:query
+													></textarea>
+												</div>
+												@dialog.Footer() {
+													@dialog.Close() {
+														@button.Button(button.Props{Variant: button.VariantOutline}) { Cancel }
+													}
+													<button 
+														class="btn btn-primary"
+														data-on:click={ datastar.PostSSE("/hosts/%s/query", h.ID.String()) }
+													>
+														Run Query
+													</button>
+												}
+											}
+										}
+										@button.Button(button.Props{
+											Size:    button.SizeSm,
+											Variant: button.VariantGhost,
+											Href:    fmt.Sprintf("/hosts/%s", h.ID.String()),
+										}) {
+											Details
+										}
+									</div>
+								</td>
+							</tr>
+						}
+					</tbody>
+				</table>
+			</div>
+		</div>
+		@dialog.Script()
+	}
+}
+
+func timeSince(t time.Time) string {
+	d := time.Since(t)
+	if d < time.Minute {
+		return "Just now"
+	}
+	if d < time.Hour {
+		return fmt.Sprintf("%d mins ago", int(d.Minutes()))
+	}
+	if d < 24*time.Hour {
+		return fmt.Sprintf("%d hours ago", int(d.Hours()))
+	}
+	return t.Format("2006-01-02")
+}
+
+func isOnline(t *time.Time) bool {
+	if t == nil {
+		return false
+	}
+	return time.Since(*t) < 5*time.Minute
+}
