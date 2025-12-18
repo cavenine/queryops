@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"log/slog"
 
-	"queryops/background"
-	"queryops/config"
-	"queryops/db"
+	"github.com/cavenine/queryops/background"
+	"github.com/cavenine/queryops/config"
+	"github.com/cavenine/queryops/db"
 
 	"github.com/spf13/cobra"
 )

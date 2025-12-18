@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"queryops/features/index/components"
+	"github.com/cavenine/queryops/features/index/components"
 
 	"github.com/alexedwards/scs/v2"
 	"github.com/delaneyj/toolbelt"

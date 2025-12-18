@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"sync/atomic"
 
-	"queryops/features/counter/pages"
+	"github.com/cavenine/queryops/features/counter/pages"
 
 	"github.com/Jeffail/gabs/v2"
 	"github.com/alexedwards/scs/v2"

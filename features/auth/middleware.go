@@ -4,7 +4,7 @@ import (
 	"context"
 	"net/http"
 
-	"queryops/features/auth/services"
+	"github.com/cavenine/queryops/features/auth/services"
 
 	"github.com/alexedwards/scs/v2"
 )

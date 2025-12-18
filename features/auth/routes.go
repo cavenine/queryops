@@ -3,8 +3,8 @@ package auth
 import (
 	"fmt"
 
-	"queryops/config"
-	"queryops/features/auth/services"
+	"github.com/cavenine/queryops/config"
+	"github.com/cavenine/queryops/features/auth/services"
 
 	"github.com/alexedwards/scs/v2"
 	"github.com/go-chi/chi/v5"

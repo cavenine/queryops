@@ -13,8 +13,8 @@ import (
 
 	"github.com/starfederation/datastar-go/datastar"
 
-	common "queryops/features/common/components"
-	"queryops/features/common/components/icon"
+	common "github.com/cavenine/queryops/features/common/components"
+	"github.com/cavenine/queryops/features/common/components/icon"
 )
 
 type TodoViewMode int

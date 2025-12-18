@@ -9,10 +9,10 @@ import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
 import (
+	"github.com/cavenine/queryops/features/auth"
+	"github.com/cavenine/queryops/features/common/components"
+	"github.com/cavenine/queryops/features/common/layouts"
 	"github.com/starfederation/datastar-go/datastar"
-	"queryops/features/auth"
-	"queryops/features/common/components"
-	"queryops/features/common/layouts"
 )
 
 type CounterSignals struct {

@@ -9,11 +9,11 @@ import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
 import (
-	"queryops/config"
-	"queryops/features/auth/services"
-	"queryops/features/common/components"
-	"queryops/features/common/components/dialog"
-	"queryops/web/resources"
+	"github.com/cavenine/queryops/config"
+	"github.com/cavenine/queryops/features/auth/services"
+	"github.com/cavenine/queryops/features/common/components"
+	"github.com/cavenine/queryops/features/common/components/dialog"
+	"github.com/cavenine/queryops/web/resources"
 )
 
 func Dashboard(title string, page components.Page, user *services.User) templ.Component {

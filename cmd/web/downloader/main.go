@@ -3,12 +3,12 @@ package main
 import (
 	"errors"
 	"fmt"
+	"github.com/cavenine/queryops/web/resources"
 	"io"
 	"log/slog"
 	"net/http"
 	"os"
 	"path/filepath"
-	"queryops/web/resources"
 	"sync"
 )
 

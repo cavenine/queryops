@@ -1,9 +1,9 @@
 # Agent Instructions
 - Dev server with live reload: `go tool task live`.
 - Production build: `go tool task build` (templ/styles/web-components).
-- Run server binary: `go tool task run` (runs `./bin/queryops web`).
+- Run server binary: `go tool task run` (runs `./bin/queryops web`); CLI uses `spf13/cobra`.
 - Migrations: `go tool task migrate` and related `migrate:*` tasks.
-- Lint/typecheck: `go vet ./...`; format: `gofmt -w .`.
+- Lint/typecheck: `go vet ./...` and `staticcheck ./...` (config in `staticcheck.conf`); format: `gofmt -w .`.
 - Tests: `go test ./...`; single test: `go test ./path -run TestName`.
 - Client assets only: `go tool task build:templ|build:styles|build:wc`.
 - Debugging: `go tool task debug` (Delve).

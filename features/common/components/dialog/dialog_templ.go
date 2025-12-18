@@ -14,8 +14,8 @@ import templruntime "github.com/a-h/templ/runtime"
 
 import (
 	"context"
-	"queryops/features/common/components/icon"
-	"queryops/utils"
+	"github.com/cavenine/queryops/features/common/components/icon"
+	"github.com/cavenine/queryops/utils"
 )
 
 type contextKey string

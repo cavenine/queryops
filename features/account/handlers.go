@@ -6,9 +6,9 @@ import (
 	"log/slog"
 	"net/http"
 
-	"queryops/features/account/pages"
-	"queryops/features/auth"
-	"queryops/features/auth/services"
+	"github.com/cavenine/queryops/features/account/pages"
+	"github.com/cavenine/queryops/features/auth"
+	"github.com/cavenine/queryops/features/auth/services"
 
 	"github.com/go-chi/chi/v5"
 )

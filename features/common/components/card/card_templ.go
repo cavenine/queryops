@@ -12,7 +12,7 @@ package card
 import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
-import "queryops/utils"
+import "github.com/cavenine/queryops/utils"
 
 type Props struct {
 	ID         string

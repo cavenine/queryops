@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"queryops/features/auth/services"
-	"queryops/internal/antibot"
+	"github.com/cavenine/queryops/features/auth/services"
+	"github.com/cavenine/queryops/internal/antibot"
 
 	"github.com/alexedwards/scs/v2"
 	"github.com/alexedwards/scs/v2/memstore"

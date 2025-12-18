@@ -9,8 +9,8 @@ import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
 import (
-	"queryops/features/common/components/icon"
-	"queryops/features/common/layouts"
+	"github.com/cavenine/queryops/features/common/components/icon"
+	"github.com/cavenine/queryops/features/common/layouts"
 )
 
 func LoginPage(email, errorMsg string) templ.Component {

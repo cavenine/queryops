@@ -3,7 +3,7 @@ package reverse
 import (
 	"net/http"
 
-	"queryops/features/reverse/pages"
+	"github.com/cavenine/queryops/features/reverse/pages"
 
 	"github.com/go-chi/chi/v5"
 )

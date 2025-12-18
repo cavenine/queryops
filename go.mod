@@ -1,4 +1,4 @@
-module queryops
+module github.com/cavenine/queryops
 
 go 1.25
 

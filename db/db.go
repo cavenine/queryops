@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 
-	"queryops/config"
+	"github.com/cavenine/queryops/config"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )

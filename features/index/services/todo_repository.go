@@ -7,7 +7,7 @@ import (
 	"errors"
 	"fmt"
 
-	"queryops/features/index/components"
+	"github.com/cavenine/queryops/features/index/components"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"

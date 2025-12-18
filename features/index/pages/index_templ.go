@@ -11,13 +11,13 @@ import templruntime "github.com/a-h/templ/runtime"
 import (
 	"github.com/starfederation/datastar-go/datastar"
 
-	"queryops/features/auth"
-	"queryops/features/common/components"
-	"queryops/features/common/components/button"
-	"queryops/features/common/components/card"
-	"queryops/features/common/components/dialog"
-	"queryops/features/common/components/icon"
-	"queryops/features/common/layouts"
+	"github.com/cavenine/queryops/features/auth"
+	"github.com/cavenine/queryops/features/common/components"
+	"github.com/cavenine/queryops/features/common/components/button"
+	"github.com/cavenine/queryops/features/common/components/card"
+	"github.com/cavenine/queryops/features/common/components/dialog"
+	"github.com/cavenine/queryops/features/common/components/icon"
+	"github.com/cavenine/queryops/features/common/layouts"
 )
 
 func IndexPage(title string) templ.Component {

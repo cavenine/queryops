@@ -14,8 +14,8 @@ import (
 	"github.com/riverqueue/river/riverdriver/riverpgxv5"
 	"github.com/riverqueue/river/rivermigrate"
 
-	"queryops/config"
-	"queryops/db"
+	"github.com/cavenine/queryops/config"
+	"github.com/cavenine/queryops/db"
 )
 
 // ClientConfig configures River queues for a client.

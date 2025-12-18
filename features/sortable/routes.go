@@ -3,7 +3,7 @@ package sortable
 import (
 	"net/http"
 
-	"queryops/features/sortable/pages"
+	"github.com/cavenine/queryops/features/sortable/pages"
 
 	"github.com/go-chi/chi/v5"
 )

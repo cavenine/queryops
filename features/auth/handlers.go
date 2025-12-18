@@ -5,9 +5,9 @@ import (
 	"log/slog"
 	"net/http"
 
-	"queryops/features/auth/pages"
-	"queryops/features/auth/services"
-	"queryops/internal/antibot"
+	"github.com/cavenine/queryops/features/auth/pages"
+	"github.com/cavenine/queryops/features/auth/services"
+	"github.com/cavenine/queryops/internal/antibot"
 
 	"github.com/alexedwards/scs/v2"
 )

@@ -9,8 +9,8 @@ import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
 import (
-	"queryops/features/auth/services"
-	"queryops/features/common/components/icon"
+	"github.com/cavenine/queryops/features/auth/services"
+	"github.com/cavenine/queryops/features/common/components/icon"
 )
 
 type Page int

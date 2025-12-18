@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 
-	"queryops/config"
+	"github.com/cavenine/queryops/config"
 
 	"github.com/alexedwards/scs/v2"
 	"github.com/go-webauthn/webauthn/protocol"

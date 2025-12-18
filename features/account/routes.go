@@ -1,7 +1,7 @@
 package account
 
 import (
-	"queryops/features/auth/services"
+	"github.com/cavenine/queryops/features/auth/services"
 
 	"github.com/go-chi/chi/v5"
 )

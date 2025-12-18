@@ -5,9 +5,9 @@ import (
 	"log/slog"
 	"strconv"
 
-	"queryops/background"
-	"queryops/config"
-	"queryops/migrations"
+	"github.com/cavenine/queryops/background"
+	"github.com/cavenine/queryops/config"
+	"github.com/cavenine/queryops/migrations"
 
 	"github.com/spf13/cobra"
 )

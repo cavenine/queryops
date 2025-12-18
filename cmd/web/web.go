@@ -9,11 +9,11 @@ import (
 	"net/http"
 	"time"
 
-	"queryops/background"
-	"queryops/config"
-	"queryops/db"
-	"queryops/migrations"
-	"queryops/router"
+	"github.com/cavenine/queryops/background"
+	"github.com/cavenine/queryops/config"
+	"github.com/cavenine/queryops/db"
+	"github.com/cavenine/queryops/migrations"
+	"github.com/cavenine/queryops/router"
 
 	"github.com/alexedwards/scs/pgxstore"
 	"github.com/alexedwards/scs/v2"

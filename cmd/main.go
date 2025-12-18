@@ -7,8 +7,8 @@ import (
 	"os/signal"
 	"syscall"
 
-	"queryops/cmd/web"
-	"queryops/config"
+	"github.com/cavenine/queryops/cmd/web"
+	"github.com/cavenine/queryops/config"
 
 	"github.com/spf13/cobra"
 )

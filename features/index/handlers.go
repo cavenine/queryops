@@ -7,9 +7,9 @@ import (
 	"strconv"
 	"time"
 
-	"queryops/features/index/components"
-	"queryops/features/index/pages"
-	"queryops/features/index/services"
+	"github.com/cavenine/queryops/features/index/components"
+	"github.com/cavenine/queryops/features/index/pages"
+	"github.com/cavenine/queryops/features/index/services"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/starfederation/datastar-go/datastar"

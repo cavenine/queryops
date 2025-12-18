@@ -1,7 +1,7 @@
 package index
 
 import (
-	"queryops/features/index/services"
+	"github.com/cavenine/queryops/features/index/services"
 
 	"github.com/alexedwards/scs/v2"
 	"github.com/go-chi/chi/v5"

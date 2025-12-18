@@ -7,7 +7,7 @@ import (
 	"log/slog"
 	"net/http"
 
-	"queryops/features/auth/services"
+	"github.com/cavenine/queryops/features/auth/services"
 
 	"github.com/alexedwards/scs/v2"
 	"github.com/go-webauthn/webauthn/protocol"

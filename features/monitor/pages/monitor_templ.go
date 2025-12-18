@@ -11,10 +11,10 @@ import templruntime "github.com/a-h/templ/runtime"
 import (
 	"github.com/starfederation/datastar-go/datastar"
 
-	"queryops/features/auth"
-	"queryops/features/common/components"
-	"queryops/features/common/components/icon"
-	"queryops/features/common/layouts"
+	"github.com/cavenine/queryops/features/auth"
+	"github.com/cavenine/queryops/features/common/components"
+	"github.com/cavenine/queryops/features/common/components/icon"
+	"github.com/cavenine/queryops/features/common/layouts"
 )
 
 type SystemMonitorSignals struct {
