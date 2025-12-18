@@ -13,6 +13,7 @@ import (
 	counterFeature "github.com/cavenine/queryops/features/counter"
 	indexFeature "github.com/cavenine/queryops/features/index"
 	monitorFeature "github.com/cavenine/queryops/features/monitor"
+	osqueryFeature "github.com/cavenine/queryops/features/osquery"
 	reverseFeature "github.com/cavenine/queryops/features/reverse"
 	sortableFeature "github.com/cavenine/queryops/features/sortable"
 	"github.com/cavenine/queryops/web/resources"
@@ -40,6 +41,9 @@ func SetupRoutes(_ context.Context, router chi.Router, sessionManager *scs.Sessi
 
 	// Static assets (public)
 	router.Handle("/static/*", resources.Handler())
+
+	// Osquery endpoints (public)
+	osqueryFeature.SetupRoutes(router, pool)
 
 	// Initialize auth feature (creates services once)
 	auth, err := authFeature.NewAuthFeature(sessionManager, pool)

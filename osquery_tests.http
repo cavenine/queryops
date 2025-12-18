@@ -1,0 +1,99 @@
+@hostname = localhost:8080
+@enroll_secret = enrollment-secret
+
+### 1. Enrollment
+# @name enroll
+POST http://{{hostname}}/osquery/enroll
+Content-Type: application/json
+
+{
+  "enroll_secret": "{{enroll_secret}}",
+  "host_identifier": "test-host-1",
+  "host_details": {
+    "os_version": "1.0.0",
+    "system_info": "test"
+  }
+}
+
+> {%
+    client.test("Enrollment successful", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+        client.assert(response.body.node_key !== undefined, "node_key missing");
+    });
+    client.global.set("node_key", response.body.node_key);
+%}
+
+### 2. Configuration
+POST http://{{hostname}}/osquery/config
+Content-Type: application/json
+
+{
+  "node_key": "{{node_key}}"
+}
+
+> {%
+    client.test("Config successful", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+        client.assert(response.body.schedule !== undefined, "schedule missing");
+    });
+%}
+
+### 3. Logger
+POST http://{{hostname}}/osquery/logger
+Content-Type: application/json
+
+{
+  "node_key": "{{node_key}}",
+  "log_type": "result",
+  "data": [
+    {
+      "name": "processes",
+      "action": "added",
+      "columns": {
+        "pid": "123",
+        "name": "test-proc"
+      }
+    }
+  ]
+}
+
+> {%
+    client.test("Logger successful", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+    });
+%}
+
+### 4. Distributed Read
+POST http://{{hostname}}/osquery/distributed_read
+Content-Type: application/json
+
+{
+  "node_key": "{{node_key}}"
+}
+
+> {%
+    client.test("Distributed Read successful", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+        client.assert(response.body.queries !== undefined, "queries missing");
+    });
+%}
+
+### 5. Distributed Write
+POST http://{{hostname}}/osquery/distributed_write
+Content-Type: application/json
+
+{
+  "node_key": "{{node_key}}",
+  "queries": {
+    "id1": [{"pid": "123"}]
+  },
+  "statuses": {
+    "id1": 0
+  }
+}
+
+> {%
+    client.test("Distributed Write successful", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+    });
+%}
