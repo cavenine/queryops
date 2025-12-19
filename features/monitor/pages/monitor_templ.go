@@ -15,6 +15,7 @@ import (
 	"github.com/cavenine/queryops/features/common/components"
 	"github.com/cavenine/queryops/features/common/components/icon"
 	"github.com/cavenine/queryops/features/common/layouts"
+	"github.com/cavenine/queryops/features/organization"
 )
 
 type SystemMonitorSignals struct {
@@ -66,7 +67,7 @@ func MonitorPage() templ.Component {
 			var templ_7745c5c3_Var3 string
 			templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(datastar.GetSSE("/monitor/events"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `features/monitor/pages/monitor.templ`, Line: 28, Col: 50}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `features/monitor/pages/monitor.templ`, Line: 35, Col: 50}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 			if templ_7745c5c3_Err != nil {
@@ -94,7 +95,13 @@ func MonitorPage() templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = layouts.Dashboard("System Monitoring", components.PageMonitor, auth.GetUserFromContext(ctx)).Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = layouts.Dashboard(layouts.DashboardProps{
+			Title:     "System Monitoring",
+			Page:      components.PageMonitor,
+			User:      auth.GetUserFromContext(ctx),
+			ActiveOrg: organization.GetOrganizationFromContext(ctx),
+			UserOrgs:  organization.GetUserOrganizationsFromContext(ctx),
+		}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

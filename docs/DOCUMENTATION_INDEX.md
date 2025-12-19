@@ -60,7 +60,16 @@ Contains:
 - Notes on production `hashfs` vs templui script URLs
 - Tailwind/DaisyUI token mapping for templui classnames
 
-### 5. osquery.md
+### 5. AST_GREP.md
+**Structural (AST) search and rewrite with ast-grep**
+
+Contains:
+- How to use `ast-grep run` effectively on Go
+- Useful patterns for routing/handlers/errors
+- Known Go parser gotchas and workarounds
+- How to set up `ast-grep scan` via `sgconfig.yml`
+
+### 6. osquery.md
 **Integration and management of osquery agents**
 
 Contains:

@@ -1,0 +1,15 @@
+id: go-chi-route-get
+valid:
+  - |
+    package p
+
+    func setup() {
+      // no GET routes
+    }
+invalid:
+  - |
+    package p
+
+    func setup(router any) {
+      router.Get("/", index)
+    }

@@ -1,0 +1,15 @@
+id: go-chi-route-post
+valid:
+  - |
+    package p
+
+    func setup() {
+      // no POST routes
+    }
+invalid:
+  - |
+    package p
+
+    func setup(router any) {
+      router.Post("/login", submit)
+    }

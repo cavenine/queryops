@@ -13,6 +13,7 @@ import (
 	counterFeature "github.com/cavenine/queryops/features/counter"
 	indexFeature "github.com/cavenine/queryops/features/index"
 	monitorFeature "github.com/cavenine/queryops/features/monitor"
+	organizationFeature "github.com/cavenine/queryops/features/organization"
 	osqueryFeature "github.com/cavenine/queryops/features/osquery"
 	reverseFeature "github.com/cavenine/queryops/features/reverse"
 	sortableFeature "github.com/cavenine/queryops/features/sortable"
@@ -42,8 +43,12 @@ func SetupRoutes(_ context.Context, router chi.Router, sessionManager *scs.Sessi
 	// Static assets (public)
 	router.Handle("/static/*", resources.Handler())
 
+	// Initialize Organization feature
+	orgFeature := organizationFeature.NewFeature(pool, sessionManager)
+	orgService := orgFeature.Service()
+
 	// Osquery endpoints (public)
-	osqueryFeature.SetupRoutes(router, pool)
+	osqueryFeature.SetupRoutes(router, pool, orgService)
 
 	// Initialize auth feature (creates services once)
 	auth, err := authFeature.NewAuthFeature(sessionManager, pool)
@@ -64,18 +69,33 @@ func SetupRoutes(_ context.Context, router chi.Router, sessionManager *scs.Sessi
 		r.Use(authFeature.RequireAuth(auth.UserService(), sessionManager))
 
 		auth.SetupProtectedRoutes(r)
-		accountFeature.SetupRoutes(r, auth.CredentialRepo())
-		osqueryFeature.SetupProtectedRoutes(r, pool)
 
-		if setupErr = errors.Join(
-			indexFeature.SetupRoutes(r, sessionManager, pool),
-			counterFeature.SetupRoutes(r, sessionManager),
-			monitorFeature.SetupRoutes(r),
-			sortableFeature.SetupRoutes(r),
-			reverseFeature.SetupRoutes(r),
-		); setupErr != nil {
-			return
-		}
+		// Account routes should have org context for the sidebar switcher,
+		// but should not force onboarding redirects.
+		r.Group(func(r chi.Router) {
+			r.Use(organizationFeature.LoadOrganizations(orgService, sessionManager))
+			accountFeature.SetupRoutes(r, auth.CredentialRepo())
+		})
+
+		// Onboarding routes
+		orgFeature.SetupOnboardingRoutes(r)
+
+		// Routes requiring an active organization
+		r.Group(func(r chi.Router) {
+			r.Use(organizationFeature.RequireOrganization(orgService, sessionManager))
+
+			osqueryFeature.SetupProtectedRoutes(r, pool, orgService)
+
+			if setupErr = errors.Join(
+				indexFeature.SetupRoutes(r, sessionManager, pool, orgService),
+				counterFeature.SetupRoutes(r, sessionManager),
+				monitorFeature.SetupRoutes(r),
+				sortableFeature.SetupRoutes(r),
+				reverseFeature.SetupRoutes(r),
+			); setupErr != nil {
+				return
+			}
+		})
 	})
 
 	if setupErr != nil {

@@ -1,0 +1,18 @@
+id: go-fmt-errorf-missing-wrap
+language: Go
+severity: warning
+message: "Prefer %w when wrapping errors"
+note: |
+  Use `fmt.Errorf("...: %w", err)` so callers can unwrap the original error.
+
+  This rule flags common cases where `%v`/`%s`/`%q` is used with an `error` argument.
+  If you are intentionally formatting the error for display (and not returning it),
+  this warning may not apply.
+rule:
+  pattern: fmt.Errorf($MSG, $ERR)
+constraints:
+  MSG:
+    kind: interpreted_string_literal
+    # ast-grep's regex engine doesn't support lookahead, so match common
+    # non-w error formatting verbs instead.
+    regex: '.*%[vsq].*'

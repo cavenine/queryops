@@ -5,11 +5,18 @@ import (
 	"github.com/cavenine/queryops/features/common/components"
 	"github.com/cavenine/queryops/features/common/components/icon"
 	"github.com/cavenine/queryops/features/common/layouts"
+	"github.com/cavenine/queryops/features/organization"
 	"github.com/cavenine/queryops/web/resources"
 )
 
 templ SortablePage() {
-	@layouts.Dashboard("Sortable", components.PageSortable, auth.GetUserFromContext(ctx)) {
+	@layouts.Dashboard(layouts.DashboardProps{
+		Title:     "Sortable",
+		Page:      components.PageSortable,
+		User:      auth.GetUserFromContext(ctx),
+		ActiveOrg: organization.GetOrganizationFromContext(ctx),
+		UserOrgs:  organization.GetUserOrganizationsFromContext(ctx),
+	}) {
 		<div class="flex flex-col gap-6">
 			<h1 class="text-3xl font-bold tracking-tight">Sortable List</h1>
 			<p class="text-base-content/60">Drag and drop integration example.</p>

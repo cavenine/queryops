@@ -18,6 +18,7 @@ import (
 	"github.com/cavenine/queryops/features/common/components/dialog"
 	"github.com/cavenine/queryops/features/common/components/icon"
 	"github.com/cavenine/queryops/features/common/layouts"
+	"github.com/cavenine/queryops/features/organization"
 	"github.com/cavenine/queryops/features/osquery/services"
 	"github.com/starfederation/datastar-go/datastar"
 )
@@ -67,7 +68,7 @@ func HostsPage(title string, hosts []*services.Host) templ.Component {
 				var templ_7745c5c3_Var3 string
 				templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(h.HostIdentifier)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `features/osquery/pages/hosts.templ`, Line: 44, Col: 50}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `features/osquery/pages/hosts.templ`, Line: 51, Col: 50}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 				if templ_7745c5c3_Err != nil {
@@ -80,7 +81,7 @@ func HostsPage(title string, hosts []*services.Host) templ.Component {
 				var templ_7745c5c3_Var4 string
 				templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(h.ID.String())
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `features/osquery/pages/hosts.templ`, Line: 45, Col: 56}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `features/osquery/pages/hosts.templ`, Line: 52, Col: 56}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 				if templ_7745c5c3_Err != nil {
@@ -94,7 +95,7 @@ func HostsPage(title string, hosts []*services.Host) templ.Component {
 					var templ_7745c5c3_Var5 string
 					templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(timeSince(*h.LastLoggerAt))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `features/osquery/pages/hosts.templ`, Line: 52, Col: 38}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `features/osquery/pages/hosts.templ`, Line: 59, Col: 38}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 					if templ_7745c5c3_Err != nil {
@@ -228,7 +229,7 @@ func HostsPage(title string, hosts []*services.Host) templ.Component {
 								var templ_7745c5c3_Var12 string
 								templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs(h.HostIdentifier)
 								if templ_7745c5c3_Err != nil {
-									return templ.Error{Err: templ_7745c5c3_Err, FileName: `features/osquery/pages/hosts.templ`, Line: 81, Col: 62}
+									return templ.Error{Err: templ_7745c5c3_Err, FileName: `features/osquery/pages/hosts.templ`, Line: 88, Col: 62}
 								}
 								_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 								if templ_7745c5c3_Err != nil {
@@ -335,7 +336,7 @@ func HostsPage(title string, hosts []*services.Host) templ.Component {
 							var templ_7745c5c3_Var17 string
 							templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.JoinStringErrs(datastar.PostSSE("/hosts/%s/query", h.ID.String()))
 							if templ_7745c5c3_Err != nil {
-								return templ.Error{Err: templ_7745c5c3_Err, FileName: `features/osquery/pages/hosts.templ`, Line: 96, Col: 80}
+								return templ.Error{Err: templ_7745c5c3_Err, FileName: `features/osquery/pages/hosts.templ`, Line: 103, Col: 80}
 							}
 							_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var17))
 							if templ_7745c5c3_Err != nil {
@@ -404,7 +405,13 @@ func HostsPage(title string, hosts []*services.Host) templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = layouts.Dashboard(title, components.PageHosts, auth.GetUserFromContext(ctx)).Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = layouts.Dashboard(layouts.DashboardProps{
+			Title:     title,
+			Page:      components.PageHosts,
+			User:      auth.GetUserFromContext(ctx),
+			ActiveOrg: organization.GetOrganizationFromContext(ctx),
+			UserOrgs:  organization.GetUserOrganizationsFromContext(ctx),
+		}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

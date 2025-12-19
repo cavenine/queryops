@@ -1,0 +1,19 @@
+id: go-fmt-errorf-missing-wrap
+valid:
+  - |
+    package p
+
+    import "fmt"
+
+    func f(err error) error {
+      return fmt.Errorf("doing thing: %w", err)
+    }
+invalid:
+  - |
+    package p
+
+    import "fmt"
+
+    func f(err error) error {
+      return fmt.Errorf("doing thing: %v", err)
+    }

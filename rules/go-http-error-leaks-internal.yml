@@ -1,0 +1,9 @@
+id: go-http-error-leaks-internal
+language: Go
+severity: warning
+message: "Avoid sending raw error messages to clients"
+note: |
+  `http.Error(w, err.Error(), http.StatusInternalServerError)` can leak internal details.
+  Prefer a generic message (e.g. `http.StatusText(...)`) and log the error server-side.
+rule:
+  pattern: http.Error($W, $ERR.Error(), http.StatusInternalServerError)

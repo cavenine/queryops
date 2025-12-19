@@ -1,0 +1,13 @@
+id: go-chi-route-post
+language: Go
+severity: off
+message: "chi POST route: $PATH"
+note: |
+  Utility rule to enumerate routes. Run with:
+
+    ast-grep scan --include-off --filter go-chi-route-post
+
+files:
+  - "**/routes.go"
+rule:
+  pattern: $R.Post($PATH, $HANDLER)

@@ -5,6 +5,7 @@ import (
 	"github.com/cavenine/queryops/features/common/components"
 	"github.com/cavenine/queryops/features/common/layouts"
 	"github.com/cavenine/queryops/features/auth"
+	"github.com/cavenine/queryops/features/organization"
 )
 
 type CounterSignals struct {
@@ -54,7 +55,13 @@ templ Counter(signals CounterSignals) {
 }
 
 templ CounterPage() {
-	@layouts.Dashboard("Counter", components.PageCounter, auth.GetUserFromContext(ctx)) {
+	@layouts.Dashboard(layouts.DashboardProps{
+		Title:     "Counter",
+		Page:      components.PageCounter,
+		User:      auth.GetUserFromContext(ctx),
+		ActiveOrg: organization.GetOrganizationFromContext(ctx),
+		UserOrgs:  organization.GetUserOrganizationsFromContext(ctx),
+	}) {
 		<div class="flex flex-col gap-6">
 			<h1 class="text-3xl font-bold tracking-tight">Counter</h1>
 			

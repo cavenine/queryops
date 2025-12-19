@@ -13,6 +13,7 @@ import (
 	"github.com/cavenine/queryops/features/common/components"
 	"github.com/cavenine/queryops/features/common/components/icon"
 	"github.com/cavenine/queryops/features/common/layouts"
+	"github.com/cavenine/queryops/features/organization"
 	"github.com/cavenine/queryops/web/resources"
 )
 
@@ -64,7 +65,7 @@ func SortablePage() templ.Component {
 			var templ_7745c5c3_Var3 string
 			templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(resources.StaticPath("libs/sortable-example.js"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `features/sortable/pages/sortable.templ`, Line: 37, Col: 78}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `features/sortable/pages/sortable.templ`, Line: 44, Col: 78}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 			if templ_7745c5c3_Err != nil {
@@ -76,7 +77,13 @@ func SortablePage() templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = layouts.Dashboard("Sortable", components.PageSortable, auth.GetUserFromContext(ctx)).Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = layouts.Dashboard(layouts.DashboardProps{
+			Title:     "Sortable",
+			Page:      components.PageSortable,
+			User:      auth.GetUserFromContext(ctx),
+			ActiveOrg: organization.GetOrganizationFromContext(ctx),
+			UserOrgs:  organization.GetUserOrganizationsFromContext(ctx),
+		}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

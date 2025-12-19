@@ -1,0 +1,13 @@
+id: go-chi-route-get
+language: Go
+severity: off
+message: "chi GET route: $PATH"
+note: |
+  Utility rule to enumerate routes. Run with:
+
+    ast-grep scan --include-off --filter go-chi-route-get
+
+files:
+  - "**/routes.go"
+rule:
+  pattern: $R.Get($PATH, $HANDLER)

@@ -1,14 +1,15 @@
 package osquery
 
 import (
+	orgServices "github.com/cavenine/queryops/features/organization/services"
 	"github.com/cavenine/queryops/features/osquery/services"
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-func SetupRoutes(router chi.Router, pool *pgxpool.Pool) {
+func SetupRoutes(router chi.Router, pool *pgxpool.Pool, orgService *orgServices.OrganizationService) {
 	repo := services.NewHostRepository(pool)
-	handlers := NewHandlers(repo)
+	handlers := NewHandlers(repo, orgService)
 
 	router.Route("/osquery", func(r chi.Router) {
 		r.Post("/enroll", handlers.Enroll)
@@ -19,9 +20,9 @@ func SetupRoutes(router chi.Router, pool *pgxpool.Pool) {
 	})
 }
 
-func SetupProtectedRoutes(router chi.Router, pool *pgxpool.Pool) {
+func SetupProtectedRoutes(router chi.Router, pool *pgxpool.Pool, orgService *orgServices.OrganizationService) {
 	repo := services.NewHostRepository(pool)
-	handlers := NewHandlers(repo)
+	handlers := NewHandlers(repo, orgService)
 
 	router.Get("/hosts", handlers.HostsPage)
 	router.Get("/hosts/{id}", handlers.HostDetailsPage)

@@ -3,6 +3,7 @@ package osquery
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -12,20 +13,21 @@ import (
 	"github.com/google/uuid"
 	"github.com/starfederation/datastar-go/datastar"
 
-	"github.com/cavenine/queryops/config"
+	org "github.com/cavenine/queryops/features/organization"
+	orgServices "github.com/cavenine/queryops/features/organization/services"
 	"github.com/cavenine/queryops/features/osquery/pages"
 	"github.com/cavenine/queryops/features/osquery/services"
 )
 
 type Handlers struct {
-	repo         *services.HostRepository
-	enrollSecret string
+	repo       *services.HostRepository
+	orgService *orgServices.OrganizationService
 }
 
-func NewHandlers(repo *services.HostRepository) *Handlers {
+func NewHandlers(repo *services.HostRepository, orgService *orgServices.OrganizationService) *Handlers {
 	return &Handlers{
-		repo:         repo,
-		enrollSecret: config.Global.OsqueryEnrollSecret,
+		repo:       repo,
+		orgService: orgService,
 	}
 }
 
@@ -36,13 +38,24 @@ func (h *Handlers) Enroll(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if req.EnrollSecret != h.enrollSecret {
-		slog.Warn("invalid enrollment secret", "received", req.EnrollSecret)
-		h.jsonResponse(w, EnrollmentResponse{NodeInvalid: true})
+	org, err := h.orgService.GetOrganizationByEnrollSecret(r.Context(), req.EnrollSecret)
+	if err != nil {
+		if errors.Is(err, orgServices.ErrOrganizationNotFound) {
+			slog.Warn("invalid enrollment secret")
+			h.jsonResponse(w, EnrollmentResponse{NodeInvalid: true})
+			return
+		}
+		slog.Error("failed to look up organization by enroll secret", "error", err)
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+	if org == nil {
+		slog.Error("organization lookup returned nil")
+		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
 
-	nodeKey, err := h.repo.Enroll(r.Context(), req.HostIdentifier, req.HostDetails)
+	nodeKey, err := h.repo.Enroll(r.Context(), req.HostIdentifier, req.HostDetails, org.ID)
 	if err != nil {
 		slog.Error("failed to enroll host", "error", err)
 		http.Error(w, "internal error", http.StatusInternalServerError)
@@ -240,7 +253,14 @@ func (h *Handlers) DistributedWrite(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handlers) HostsPage(w http.ResponseWriter, r *http.Request) {
-	hosts, err := h.repo.List(r.Context())
+	activeOrg := org.GetOrganizationFromContext(r.Context())
+	if activeOrg == nil {
+		slog.Error("missing active organization in context")
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+
+	hosts, err := h.repo.ListByOrganization(r.Context(), activeOrg.ID)
 	if err != nil {
 		slog.Error("failed to list hosts", "error", err)
 		http.Error(w, "internal error", http.StatusInternalServerError)
@@ -258,13 +278,21 @@ func (h *Handlers) HostDetailsPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	host, err := h.repo.GetByID(r.Context(), hostID)
+	activeOrg := org.GetOrganizationFromContext(r.Context())
+	if activeOrg == nil {
+		slog.Error("missing active organization in context")
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+
+	host, err := h.repo.GetByIDAndOrganization(r.Context(), hostID, activeOrg.ID)
 	if err != nil {
 		slog.Error("failed to get host", "error", err)
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
 	if host == nil {
+		// Treat org mismatch as not found.
 		http.Error(w, "host not found", http.StatusNotFound)
 		return
 	}
@@ -285,13 +313,21 @@ func (h *Handlers) HostResultsSSE(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	host, err := h.repo.GetByID(r.Context(), hostID)
+	activeOrg := org.GetOrganizationFromContext(r.Context())
+	if activeOrg == nil {
+		slog.Error("missing active organization in context")
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+
+	host, err := h.repo.GetByIDAndOrganization(r.Context(), hostID, activeOrg.ID)
 	if err != nil {
 		slog.Error("failed to get host", "error", err)
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
 	if host == nil {
+		// Treat org mismatch as not found.
 		http.Error(w, "host not found", http.StatusNotFound)
 		return
 	}
@@ -352,7 +388,26 @@ func (h *Handlers) RunQuery(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	queryID, err := h.repo.QueueQuery(r.Context(), store.Query, []uuid.UUID{hostID})
+	activeOrg := org.GetOrganizationFromContext(r.Context())
+	if activeOrg == nil {
+		slog.Error("missing active organization in context")
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+
+	host, err := h.repo.GetByIDAndOrganization(r.Context(), hostID, activeOrg.ID)
+	if err != nil {
+		slog.Error("failed to get host", "error", err)
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+	if host == nil {
+		// Treat org mismatch as not found.
+		http.Error(w, "host not found", http.StatusNotFound)
+		return
+	}
+
+	queryID, err := h.repo.QueueQuery(r.Context(), store.Query, []uuid.UUID{host.ID})
 	if err != nil {
 		slog.Error("failed to queue query", "error", err)
 		http.Error(w, "internal error", http.StatusInternalServerError)

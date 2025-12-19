@@ -10,16 +10,28 @@ import (
 	"github.com/cavenine/queryops/features/common/components/dialog"
 	"github.com/cavenine/queryops/features/common/components/icon"
 	"github.com/cavenine/queryops/features/common/layouts"
+	"github.com/cavenine/queryops/features/organization/services"
 )
 
-templ IndexPage(title string) {
-	@layouts.Dashboard(title, components.PageIndex, auth.GetUserFromContext(ctx)) {
+templ IndexPage(title string, org *services.Organization, enrollSecret string, userOrgs []*services.Organization) {
+	@layouts.Dashboard(layouts.DashboardProps{
+		Title:     title,
+		Page:      components.PageIndex,
+		User:      auth.GetUserFromContext(ctx),
+		ActiveOrg: org,
+		UserOrgs:  userOrgs,
+	}) {
 		<div class="flex flex-col gap-6">
 			<!-- Header Section -->
 			<div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
 				<div>
-					<h1 class="text-3xl font-bold tracking-tight">Task Management</h1>
-					<p class="text-base-content/60 mt-1">Manage your deployment tasks and configurations.</p>
+					if org != nil {
+						<h1 class="text-3xl font-bold tracking-tight">{ org.Name }</h1>
+						<p class="text-base-content/60 mt-1">Manage your organization hosts and tasks.</p>
+					} else {
+						<h1 class="text-3xl font-bold tracking-tight">Task Management</h1>
+						<p class="text-base-content/60 mt-1">Manage your deployment tasks and configurations.</p>
+					}
 				</div>
 				<div class="flex gap-2">
 					@dialog.Dialog(dialog.Props{ID: "new-task-dialog"}) {
@@ -54,6 +66,22 @@ templ IndexPage(title string) {
 				</div>
 			</div>
 
+			if org != nil && enrollSecret != "" {
+				@card.Card(card.Props{Class: "shadow-sm bg-base-100 border border-base-200"}) {
+					@card.Content(card.ContentProps{}) {
+						<div class="flex flex-col gap-2">
+							<h3 class="font-semibold text-sm">Enrollment Secret</h3>
+							<div class="flex flex-wrap items-center gap-2">
+								<code class="bg-base-200 px-3 py-2 rounded font-mono text-sm select-all">{ enrollSecret }</code>
+								<button class="btn btn-ghost btn-sm" onclick="navigator.clipboard.writeText(this.previousElementSibling.innerText)">
+									@icon.Copy(icon.Props{Class: "w-4 h-4"})
+								</button>
+							</div>
+							<p class="text-xs text-base-content/60">Use this key to enroll your osquery hosts into { org.Name }.</p>
+						</div>
+					}
+				}
+			}
 
 			<!-- Tasks Card -->
 			@card.Card(card.Props{Class: "shadow-sm"}) {

@@ -14,6 +14,7 @@ import (
 	"github.com/cavenine/queryops/features/common/components"
 	"github.com/cavenine/queryops/features/common/components/icon"
 	"github.com/cavenine/queryops/features/common/layouts"
+	"github.com/cavenine/queryops/features/organization"
 )
 
 func AccountPage(email string, passkeys []services.PasskeyInfo) templ.Component {
@@ -64,7 +65,7 @@ func AccountPage(email string, passkeys []services.PasskeyInfo) templ.Component 
 			var templ_7745c5c3_Var3 string
 			templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(email)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `features/account/pages/account.templ`, Line: 29, Col: 39}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `features/account/pages/account.templ`, Line: 36, Col: 39}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 			if templ_7745c5c3_Err != nil {
@@ -125,7 +126,13 @@ func AccountPage(email string, passkeys []services.PasskeyInfo) templ.Component 
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = layouts.Dashboard("Account Settings", components.PageAccount, auth.GetUserFromContext(ctx)).Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = layouts.Dashboard(layouts.DashboardProps{
+			Title:     "Account Settings",
+			Page:      components.PageAccount,
+			User:      auth.GetUserFromContext(ctx),
+			ActiveOrg: organization.GetOrganizationFromContext(ctx),
+			UserOrgs:  organization.GetUserOrganizationsFromContext(ctx),
+		}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -170,7 +177,7 @@ func passkeyCard(pk services.PasskeyInfo) templ.Component {
 			var templ_7745c5c3_Var5 string
 			templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(pk.Nickname)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `features/account/pages/account.templ`, Line: 251, Col: 19}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `features/account/pages/account.templ`, Line: 258, Col: 19}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 			if templ_7745c5c3_Err != nil {
@@ -189,7 +196,7 @@ func passkeyCard(pk services.PasskeyInfo) templ.Component {
 		var templ_7745c5c3_Var6 string
 		templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(pk.CreatedAt.Format("Jan 2, 2006"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `features/account/pages/account.templ`, Line: 257, Col: 47}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `features/account/pages/account.templ`, Line: 264, Col: 47}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 		if templ_7745c5c3_Err != nil {
@@ -207,7 +214,7 @@ func passkeyCard(pk services.PasskeyInfo) templ.Component {
 			var templ_7745c5c3_Var7 string
 			templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(pk.LastUsedAt.Format("Jan 2, 2006"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `features/account/pages/account.templ`, Line: 259, Col: 52}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `features/account/pages/account.templ`, Line: 266, Col: 52}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 			if templ_7745c5c3_Err != nil {
@@ -221,7 +228,7 @@ func passkeyCard(pk services.PasskeyInfo) templ.Component {
 		var templ_7745c5c3_Var8 string
 		templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(pk.ID)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `features/account/pages/account.templ`, Line: 267, Col: 26}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `features/account/pages/account.templ`, Line: 274, Col: 26}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 		if templ_7745c5c3_Err != nil {

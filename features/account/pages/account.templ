@@ -6,10 +6,17 @@ import (
 	"github.com/cavenine/queryops/features/common/components"
 	"github.com/cavenine/queryops/features/common/components/icon"
 	"github.com/cavenine/queryops/features/common/layouts"
+	"github.com/cavenine/queryops/features/organization"
 )
 
 templ AccountPage(email string, passkeys []services.PasskeyInfo) {
-	@layouts.Dashboard("Account Settings", components.PageAccount, auth.GetUserFromContext(ctx)) {
+	@layouts.Dashboard(layouts.DashboardProps{
+		Title:     "Account Settings",
+		Page:      components.PageAccount,
+		User:      auth.GetUserFromContext(ctx),
+		ActiveOrg: organization.GetOrganizationFromContext(ctx),
+		UserOrgs:  organization.GetUserOrganizationsFromContext(ctx),
+	}) {
 		<div class="flex flex-col gap-6">
 			<h1 class="text-3xl font-bold tracking-tight">Account Settings</h1>
 			

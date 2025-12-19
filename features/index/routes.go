@@ -2,17 +2,18 @@ package index
 
 import (
 	"github.com/cavenine/queryops/features/index/services"
+	orgServices "github.com/cavenine/queryops/features/organization/services"
 
 	"github.com/alexedwards/scs/v2"
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-func SetupRoutes(router chi.Router, sessionManager *scs.SessionManager, pool *pgxpool.Pool) error {
+func SetupRoutes(router chi.Router, sessionManager *scs.SessionManager, pool *pgxpool.Pool, orgService *orgServices.OrganizationService) error {
 	repo := services.NewTodoRepository(pool)
 	todoService := services.NewTodoService(repo, sessionManager)
 
-	handlers := NewHandlers(todoService)
+	handlers := NewHandlers(todoService, orgService)
 
 	router.Get("/", handlers.IndexPage)
 

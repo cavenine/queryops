@@ -1,0 +1,15 @@
+# ast-grep project configuration
+#
+# This repo primarily uses ast-grep in ad-hoc mode (`ast-grep run`), but having
+# a project config enables `ast-grep scan` and `ast-grep test` for shared rules.
+#
+# Docs: `docs/AST_GREP.md`
+
+ruleDirs:
+  - rules
+
+utilDirs:
+  - utils
+
+testConfigs:
+  - testDir: rule-tests

@@ -5,14 +5,23 @@ import (
 	"github.com/cavenine/queryops/features/auth/services"
 	"github.com/cavenine/queryops/features/common/components"
 	"github.com/cavenine/queryops/features/common/components/dialog"
+	orgServices "github.com/cavenine/queryops/features/organization/services"
 	"github.com/cavenine/queryops/web/resources"
 )
 
-templ Dashboard(title string, page components.Page, user *services.User) {
+type DashboardProps struct {
+	Title      string
+	Page       components.Page
+	User       *services.User
+	ActiveOrg  *orgServices.Organization
+	UserOrgs   []*orgServices.Organization
+}
+
+templ Dashboard(props DashboardProps) {
 	<!DOCTYPE html>
 	<html lang="en" class="bg-base-100 h-full">
 		<head>
-			<title>{ title }</title>
+			<title>{ props.Title }</title>
 			<meta name="viewport" content="width=device-width, initial-scale=1"/>
 			<!-- Open Graph -->
 			<meta property="og:title" content="QueryOps"/>
@@ -47,7 +56,7 @@ templ Dashboard(title string, page components.Page, user *services.User) {
 				
 				<div class="drawer-content flex flex-col h-screen overflow-hidden bg-base-100">
 					<!-- Mobile Header -->
-					@components.MobileHeader(title)
+					@components.MobileHeader(props.Title)
 					
 					<!-- Main Content -->
 					<main class="flex-1 overflow-y-auto p-4 lg:p-8 bg-base-100">
@@ -60,7 +69,7 @@ templ Dashboard(title string, page components.Page, user *services.User) {
 				<!-- Sidebar (Drawer Side) -->
 				<div class="drawer-side z-40 border-r border-base-300">
 					<label for="main-drawer" aria-label="close sidebar" class="drawer-overlay"></label>
-					@components.Sidebar(page, user)
+					@components.Sidebar(props.Page, props.User, props.ActiveOrg, props.UserOrgs)
 				</div>
 			</div>
 		</body>

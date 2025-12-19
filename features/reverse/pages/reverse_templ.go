@@ -12,6 +12,7 @@ import (
 	"github.com/cavenine/queryops/features/auth"
 	"github.com/cavenine/queryops/features/common/components"
 	"github.com/cavenine/queryops/features/common/layouts"
+	"github.com/cavenine/queryops/features/organization"
 	"github.com/cavenine/queryops/web/resources"
 )
 
@@ -55,7 +56,7 @@ func ReversePage() templ.Component {
 			var templ_7745c5c3_Var3 string
 			templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(resources.StaticPath("libs/reverse-component.js"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `features/reverse/pages/reverse.templ`, Line: 36, Col: 79}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `features/reverse/pages/reverse.templ`, Line: 43, Col: 79}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 			if templ_7745c5c3_Err != nil {
@@ -67,7 +68,13 @@ func ReversePage() templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = layouts.Dashboard("Reverse Web Component", components.PageReverse, auth.GetUserFromContext(ctx)).Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = layouts.Dashboard(layouts.DashboardProps{
+			Title:     "Reverse Web Component",
+			Page:      components.PageReverse,
+			User:      auth.GetUserFromContext(ctx),
+			ActiveOrg: organization.GetOrganizationFromContext(ctx),
+			UserOrgs:  organization.GetUserOrganizationsFromContext(ctx),
+		}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

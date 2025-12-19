@@ -1,0 +1,69 @@
+package components
+
+import (
+	"github.com/cavenine/queryops/features/common/components/icon"
+	"github.com/cavenine/queryops/features/organization/services"
+)
+
+type SwitcherProps struct {
+	ActiveOrg *services.Organization
+	UserOrgs  []*services.Organization
+	Class     string
+}
+
+templ Switcher(props SwitcherProps) {
+	<div class={ "dropdown w-full", props.Class }>
+		<div tabindex="0" role="button" class="btn btn-ghost w-full justify-between px-2 bg-base-100 border border-base-300 shadow-sm hover:bg-base-200">
+			<div class="flex items-center gap-3 overflow-hidden">
+				<div class="w-8 h-8 rounded bg-primary text-primary-content flex items-center justify-center shrink-0">
+					@icon.Building(icon.Props{Class: "w-5 h-5"})
+				</div>
+				<div class="flex flex-col items-start truncate">
+					if props.ActiveOrg != nil {
+						<span class="text-sm font-semibold truncate">{ props.ActiveOrg.Name }</span>
+						<span class="text-xs opacity-60">Organization</span>
+					} else {
+						<span class="text-sm font-semibold">Select Org</span>
+					}
+				</div>
+			</div>
+			@icon.ChevronDown(icon.Props{Class: "w-4 h-4 opacity-50 shrink-0"})
+		</div>
+		<ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow-lg bg-base-100 rounded-box w-full mt-2 border border-base-300">
+			if len(props.UserOrgs) > 0 {
+				<li class="menu-title text-xs font-semibold uppercase opacity-50 px-2 py-1">Switch Organization</li>
+				for _, org := range props.UserOrgs {
+					<li>
+						<form method="POST" action="/organization/switch" class="w-full">
+							<input type="hidden" name="org_id" value={ org.ID.String() }/>
+							<button
+								type="submit"
+								class={
+									"flex w-full items-center gap-2 rounded px-2 py-2 overflow-hidden",
+									templ.KV("active", props.ActiveOrg != nil && org.ID == props.ActiveOrg.ID),
+								}
+							>
+								<div class="w-4 h-4 shrink-0">
+									if props.ActiveOrg != nil && org.ID == props.ActiveOrg.ID {
+										@icon.Check(icon.Props{Class: "w-4 h-4"})
+									} else {
+										@icon.Check(icon.Props{Class: "w-4 h-4 opacity-0"})
+									}
+								</div>
+								@icon.Building2(icon.Props{Class: "w-4 h-4 opacity-70 shrink-0"})
+								<span class="truncate min-w-0 flex-1">{ org.Name }</span>
+							</button>
+						</form>
+					</li>
+				}
+				<div class="divider my-1"></div>
+			}
+			<li>
+				<a href="/onboarding/create-org" class="flex items-center gap-2 text-primary">
+					@icon.Plus(icon.Props{Class: "w-4 h-4 shrink-0"})
+					Create Organization
+				</a>
+			</li>
+		</ul>
+	</div>
+}

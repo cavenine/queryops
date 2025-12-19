@@ -5,6 +5,7 @@
 - Migrations: `go tool task migrate` and related `migrate:*` tasks.
 - Lint/typecheck: `go vet ./...` and `staticcheck ./...` (config in `staticcheck.conf`); format: `gofmt -w .`.
 - Tests: `go test ./...`; single test: `go test ./path -run TestName`.
+- AST search/rewrites: `ast-grep run -l go -p '<pattern>' --globs '**/*.go' .` (see `docs/AST_GREP.md`); project config in `sgconfig.yml`.
 - Client assets only: `go tool task build:templ|build:styles|build:wc`.
 - Debugging: `go tool task debug` (Delve).
 - Imports: stdlib, blank line, external deps, blank line, internal packages.

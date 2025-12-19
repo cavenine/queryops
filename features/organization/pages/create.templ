@@ -1,0 +1,49 @@
+package pages
+
+import (
+	"github.com/cavenine/queryops/features/common/components/icon"
+	"github.com/cavenine/queryops/features/common/layouts"
+)
+
+templ CreatePage(errorMsg string) {
+	@layouts.Base("Create Organization") {
+		<div class="flex flex-1 items-center justify-center bg-base-200">
+			<div class="card w-full max-w-md bg-base-100 shadow-xl border border-base-300/40">
+				<div class="card-body gap-4">
+					<div class="flex items-center justify-center gap-2">
+						@icon.Terminal(icon.Props{Class: "w-6 h-6 text-primary"})
+						<span class="font-mono text-lg tracking-wide">QueryOps</span>
+					</div>
+					<h2 class="card-title justify-center text-2xl font-semibold tracking-tight">Create Organization</h2>
+					<p class="text-center text-sm text-base-content/70">
+						Hosts must belong to an organization. Create one to get started.
+					</p>
+					if errorMsg != "" {
+						<div class="alert alert-error" role="alert">
+							<span>{ errorMsg }</span>
+						</div>
+					}
+					<form method="POST" action="/onboarding/create-org" class="space-y-4">
+						<div class="form-control">
+							<label class="label" for="name">
+								<span class="label-text">Organization Name</span>
+							</label>
+							<input
+								type="text"
+								id="name"
+								name="name"
+								class="input input-bordered w-full"
+								placeholder="Acme Corp"
+								required
+								autofocus
+							/>
+						</div>
+						<div class="form-control mt-6">
+							<button type="submit" class="btn btn-primary w-full">Create Organization</button>
+						</div>
+					</form>
+				</div>
+			</div>
+		</div>
+	}
+}

@@ -10,12 +10,19 @@ import (
 	"github.com/cavenine/queryops/features/common/components/dialog"
 	"github.com/cavenine/queryops/features/common/components/icon"
 	"github.com/cavenine/queryops/features/common/layouts"
+	"github.com/cavenine/queryops/features/organization"
 	"github.com/cavenine/queryops/features/osquery/services"
 	"github.com/starfederation/datastar-go/datastar"
 )
 
 templ HostsPage(title string, hosts []*services.Host) {
-	@layouts.Dashboard(title, components.PageHosts, auth.GetUserFromContext(ctx)) {
+	@layouts.Dashboard(layouts.DashboardProps{
+		Title:     title,
+		Page:      components.PageHosts,
+		User:      auth.GetUserFromContext(ctx),
+		ActiveOrg: organization.GetOrganizationFromContext(ctx),
+		UserOrgs:  organization.GetUserOrganizationsFromContext(ctx),
+	}) {
 		<div class="flex flex-col gap-6" data-signals="{query: 'SELECT * FROM uptime;'}">
 			<!-- Header Section -->
 			<div class="flex flex-col md:flex-row md:items-center justify-between gap-4">

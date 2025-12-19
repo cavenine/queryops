@@ -12,13 +12,15 @@ import (
 )
 
 type Host struct {
-	ID                uuid.UUID
-	HostIdentifier    string
-	NodeKey           string
-	OSVersion         json.RawMessage
-	OsqueryInfo       json.RawMessage
-	SystemInfo        json.RawMessage
-	PlatformInfo      json.RawMessage
+	ID             uuid.UUID
+	OrganizationID uuid.UUID
+	HostIdentifier string
+	NodeKey        string
+	OSVersion      json.RawMessage
+	OsqueryInfo    json.RawMessage
+	SystemInfo     json.RawMessage
+	PlatformInfo   json.RawMessage
+
 	LastEnrollmentAt  time.Time
 	LastConfigAt      *time.Time
 	LastLoggerAt      *time.Time
@@ -35,7 +37,7 @@ func NewHostRepository(pool *pgxpool.Pool) *HostRepository {
 	return &HostRepository{pool: pool}
 }
 
-func (r *HostRepository) Enroll(ctx context.Context, hostIdentifier string, hostDetails json.RawMessage) (string, error) {
+func (r *HostRepository) Enroll(ctx context.Context, hostIdentifier string, hostDetails json.RawMessage, organizationID uuid.UUID) (string, error) {
 	nodeKey := uuid.New().String()
 
 	// Parse host details to extract info if possible, or just store as JSONB
@@ -45,11 +47,11 @@ func (r *HostRepository) Enroll(ctx context.Context, hostIdentifier string, host
 	// The prompt says "For now this will include the detailed in the enrollment request."
 
 	_, err := r.pool.Exec(ctx, `
-		INSERT INTO hosts (host_identifier, node_key, last_enrollment_at, updated_at)
-		VALUES ($1, $2, NOW(), NOW())
-		ON CONFLICT (host_identifier)
+		INSERT INTO hosts (host_identifier, node_key, organization_id, last_enrollment_at, updated_at)
+		VALUES ($1, $2, $3, NOW(), NOW())
+		ON CONFLICT (organization_id, host_identifier)
 		DO UPDATE SET node_key = EXCLUDED.node_key, last_enrollment_at = NOW(), updated_at = NOW()
-	`, hostIdentifier, nodeKey)
+	`, hostIdentifier, nodeKey, organizationID)
 	if err != nil {
 		return "", fmt.Errorf("enrolling host: %w", err)
 	}
@@ -68,12 +70,12 @@ func (r *HostRepository) GetByID(ctx context.Context, id uuid.UUID) (*Host, erro
 func (r *HostRepository) getBy(ctx context.Context, column string, value any) (*Host, error) {
 	var h Host
 	query := fmt.Sprintf(`
-		SELECT id, host_identifier, node_key, os_version, osquery_info, system_info, platform_info,
+		SELECT id, organization_id, host_identifier, node_key, os_version, osquery_info, system_info, platform_info,
 		       last_enrollment_at, last_config_at, last_logger_at, last_distributed_at, created_at, updated_at
 		FROM hosts WHERE %s = $1
 	`, column)
 	err := r.pool.QueryRow(ctx, query, value).Scan(
-		&h.ID, &h.HostIdentifier, &h.NodeKey, &h.OSVersion, &h.OsqueryInfo, &h.SystemInfo, &h.PlatformInfo,
+		&h.ID, &h.OrganizationID, &h.HostIdentifier, &h.NodeKey, &h.OSVersion, &h.OsqueryInfo, &h.SystemInfo, &h.PlatformInfo,
 		&h.LastEnrollmentAt, &h.LastConfigAt, &h.LastLoggerAt, &h.LastDistributedAt, &h.CreatedAt, &h.UpdatedAt,
 	)
 	if err != nil {
@@ -102,7 +104,7 @@ func (r *HostRepository) UpdateLastDistributed(ctx context.Context, nodeKey stri
 
 func (r *HostRepository) List(ctx context.Context) ([]*Host, error) {
 	rows, err := r.pool.Query(ctx, `
-		SELECT id, host_identifier, node_key, os_version, osquery_info, system_info, platform_info,
+		SELECT id, organization_id, host_identifier, node_key, os_version, osquery_info, system_info, platform_info,
 		       last_enrollment_at, last_config_at, last_logger_at, last_distributed_at, created_at, updated_at
 		FROM hosts
 		ORDER BY last_logger_at DESC NULLS LAST
@@ -116,7 +118,7 @@ func (r *HostRepository) List(ctx context.Context) ([]*Host, error) {
 	for rows.Next() {
 		var h Host
 		err := rows.Scan(
-			&h.ID, &h.HostIdentifier, &h.NodeKey, &h.OSVersion, &h.OsqueryInfo, &h.SystemInfo, &h.PlatformInfo,
+			&h.ID, &h.OrganizationID, &h.HostIdentifier, &h.NodeKey, &h.OSVersion, &h.OsqueryInfo, &h.SystemInfo, &h.PlatformInfo,
 			&h.LastEnrollmentAt, &h.LastConfigAt, &h.LastLoggerAt, &h.LastDistributedAt, &h.CreatedAt, &h.UpdatedAt,
 		)
 		if err != nil {
@@ -128,6 +130,57 @@ func (r *HostRepository) List(ctx context.Context) ([]*Host, error) {
 		return nil, fmt.Errorf("listing hosts: %w", err)
 	}
 	return hosts, nil
+}
+
+func (r *HostRepository) ListByOrganization(ctx context.Context, organizationID uuid.UUID) ([]*Host, error) {
+	rows, err := r.pool.Query(ctx, `
+		SELECT id, organization_id, host_identifier, node_key, os_version, osquery_info, system_info, platform_info,
+		       last_enrollment_at, last_config_at, last_logger_at, last_distributed_at, created_at, updated_at
+		FROM hosts
+		WHERE organization_id = $1
+		ORDER BY last_logger_at DESC NULLS LAST
+	`, organizationID)
+	if err != nil {
+		return nil, fmt.Errorf("listing hosts by organization: %w", err)
+	}
+	defer rows.Close()
+
+	var hosts []*Host
+	for rows.Next() {
+		var h Host
+		err := rows.Scan(
+			&h.ID, &h.OrganizationID, &h.HostIdentifier, &h.NodeKey, &h.OSVersion, &h.OsqueryInfo, &h.SystemInfo, &h.PlatformInfo,
+			&h.LastEnrollmentAt, &h.LastConfigAt, &h.LastLoggerAt, &h.LastDistributedAt, &h.CreatedAt, &h.UpdatedAt,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("scanning host: %w", err)
+		}
+		hosts = append(hosts, &h)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("listing hosts by organization: %w", err)
+	}
+	return hosts, nil
+}
+
+func (r *HostRepository) GetByIDAndOrganization(ctx context.Context, id uuid.UUID, organizationID uuid.UUID) (*Host, error) {
+	var h Host
+	err := r.pool.QueryRow(ctx, `
+		SELECT id, organization_id, host_identifier, node_key, os_version, osquery_info, system_info, platform_info,
+		       last_enrollment_at, last_config_at, last_logger_at, last_distributed_at, created_at, updated_at
+		FROM hosts
+		WHERE id = $1 AND organization_id = $2
+	`, id, organizationID).Scan(
+		&h.ID, &h.OrganizationID, &h.HostIdentifier, &h.NodeKey, &h.OSVersion, &h.OsqueryInfo, &h.SystemInfo, &h.PlatformInfo,
+		&h.LastEnrollmentAt, &h.LastConfigAt, &h.LastLoggerAt, &h.LastDistributedAt, &h.CreatedAt, &h.UpdatedAt,
+	)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("getting host by id and organization: %w", err)
+	}
+	return &h, nil
 }
 
 func (r *HostRepository) SaveResultLogs(ctx context.Context, hostID uuid.UUID, name, action string, columns json.RawMessage, timestamp time.Time) error {

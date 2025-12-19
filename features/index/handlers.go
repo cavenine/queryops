@@ -10,9 +10,12 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/cavenine/queryops/features/auth"
 	"github.com/cavenine/queryops/features/index/components"
 	"github.com/cavenine/queryops/features/index/pages"
 	"github.com/cavenine/queryops/features/index/services"
+	"github.com/cavenine/queryops/features/organization"
+	orgServices "github.com/cavenine/queryops/features/organization/services"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/starfederation/datastar-go/datastar"
@@ -20,16 +23,39 @@ import (
 
 type Handlers struct {
 	todoService *services.TodoService
+	orgService  *orgServices.OrganizationService
 }
 
-func NewHandlers(todoService *services.TodoService) *Handlers {
+func NewHandlers(todoService *services.TodoService, orgService *orgServices.OrganizationService) *Handlers {
 	return &Handlers{
 		todoService: todoService,
+		orgService:  orgService,
 	}
 }
 
 func (h *Handlers) IndexPage(w http.ResponseWriter, r *http.Request) {
-	if err := pages.IndexPage("QueryOps").Render(r.Context(), w); err != nil {
+	org := organization.GetOrganizationFromContext(r.Context())
+	var secret string
+	if org != nil {
+		var err error
+		secret, err = h.orgService.GetActiveEnrollSecret(r.Context(), org.ID)
+		if err != nil {
+			slog.Error("failed to get enroll secret", "error", err)
+		}
+	}
+
+	user := auth.GetUserFromContext(r.Context())
+	userOrgs := organization.GetUserOrganizationsFromContext(r.Context())
+	if user != nil && userOrgs == nil {
+		// Fallback: if middleware isn't present for some reason.
+		var err error
+		userOrgs, err = h.orgService.GetUserOrganizations(r.Context(), user.ID)
+		if err != nil {
+			slog.Error("failed to get user organizations", "error", err)
+		}
+	}
+
+	if err := pages.IndexPage("QueryOps", org, secret, userOrgs).Render(r.Context(), w); err != nil {
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 	}
 }
