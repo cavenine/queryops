@@ -96,9 +96,9 @@ type ResultLog struct {
 }
 
 type StatusLog struct {
-	Line         int      `json:"line,string"`
+	Line         int      `json:"line"`
 	Message      string   `json:"message"`
-	Severity     int      `json:"severity,string"`
+	Severity     int      `json:"severity"`
 	Filename     string   `json:"filename"`
 	CalendarTime string   `json:"calendarTime"`
 	UnixTime     UnixTime `json:"unixTime"`

@@ -132,6 +132,22 @@ tasks:
     deps:
       - build
 
+  test:
+    desc: Run Go test suite
+    cmds:
+      - go test ./...
+
+  test:integration:
+    desc: Run Testcontainers integration tests
+    cmds:
+      - go test ./internal/testdb
+
+  test:all:
+    desc: Run unit + integration tests
+    deps:
+      - test
+      - test:integration
+
   migrate:create:
     desc: Create a new timestamped migration
     cmds:

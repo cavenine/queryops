@@ -76,10 +76,10 @@ func TestProtector_Validate(t *testing.T) {
 		}
 	})
 
-	runBlockedCases(t, p, issue, token, sm, &now)
+	runBlockedCases(t, p, issue, &token, sm, &now)
 }
 
-func runBlockedCases(t *testing.T, p *antibot.Protector, issue http.Handler, token string, sm *scs.SessionManager, nowPtr *time.Time) {
+func runBlockedCases(t *testing.T, p *antibot.Protector, issue http.Handler, tokenPtr *string, sm *scs.SessionManager, nowPtr *time.Time) {
 	blockedCases := []struct {
 		name          string
 		useValidToken bool
@@ -102,7 +102,7 @@ func runBlockedCases(t *testing.T, p *antibot.Protector, issue http.Handler, tok
 			subRec := httptest.NewRecorder()
 			issue.ServeHTTP(subRec, httptest.NewRequest(http.MethodGet, "/register", nil))
 			subCookie := subRec.Result().Cookies()[0]
-			tok := token
+			tok := *tokenPtr
 
 			if !tc.skipDelay {
 				*nowPtr = nowPtr.Add(3 * time.Second)

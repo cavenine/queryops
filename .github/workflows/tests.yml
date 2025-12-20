@@ -1,0 +1,23 @@
+name: Tests
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: 'go.mod' # specific version from your mod file
+          cache: true               # default is true, but explicit is better
+
+      - name: Run unit + integration tests
+        run: go tool task test:all

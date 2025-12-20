@@ -2,6 +2,7 @@ package osquery
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -19,12 +20,34 @@ import (
 	"github.com/cavenine/queryops/features/osquery/services"
 )
 
-type Handlers struct {
-	repo       *services.HostRepository
-	orgService *orgServices.OrganizationService
+type hostRepository interface {
+	Enroll(ctx context.Context, hostIdentifier string, hostDetails json.RawMessage, organizationID uuid.UUID) (string, error)
+	GetByNodeKey(ctx context.Context, nodeKey string) (*services.Host, error)
+	UpdateLastConfig(ctx context.Context, nodeKey string) error
+	UpdateLastLogger(ctx context.Context, nodeKey string) error
+	UpdateLastDistributed(ctx context.Context, nodeKey string) error
+	GetConfigForHost(ctx context.Context, nodeKey string) (json.RawMessage, error)
+	SaveResultLogs(ctx context.Context, hostID uuid.UUID, name, action string, columns json.RawMessage, timestamp time.Time) error
+	SaveStatusLogs(ctx context.Context, hostID uuid.UUID, line int, message string, severity int, filename string, createdAt time.Time) error
+	GetPendingQueries(ctx context.Context, hostID uuid.UUID) (map[string]string, error)
+	SaveQueryResults(ctx context.Context, hostID uuid.UUID, queryID uuid.UUID, status string, results json.RawMessage, errorText *string) error
+
+	ListByOrganization(ctx context.Context, organizationID uuid.UUID) ([]*services.Host, error)
+	GetByIDAndOrganization(ctx context.Context, id uuid.UUID, organizationID uuid.UUID) (*services.Host, error)
+	GetRecentResults(ctx context.Context, hostID uuid.UUID) ([]services.QueryResult, error)
+	QueueQuery(ctx context.Context, query string, hostIDs []uuid.UUID) (uuid.UUID, error)
 }
 
-func NewHandlers(repo *services.HostRepository, orgService *orgServices.OrganizationService) *Handlers {
+type enrollmentOrgLookup interface {
+	GetOrganizationByEnrollSecret(ctx context.Context, secret string) (*orgServices.Organization, error)
+}
+
+type Handlers struct {
+	repo       hostRepository
+	orgService enrollmentOrgLookup
+}
+
+func NewHandlers(repo hostRepository, orgService enrollmentOrgLookup) *Handlers {
 	return &Handlers{
 		repo:       repo,
 		orgService: orgService,
@@ -159,7 +182,7 @@ func (h *Handlers) DistributedRead(w http.ResponseWriter, r *http.Request) {
 
 	host, err := h.repo.GetByNodeKey(r.Context(), req.NodeKey)
 	if err != nil || host == nil {
-		h.jsonResponse(w, DistributedReadResponse{NodeInvalid: true})
+		h.jsonResponse(w, DistributedReadResponse{NodeInvalid: true, Queries: map[string]string{}})
 		return
 	}
 
