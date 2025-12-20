@@ -22,3 +22,4 @@ osquery.*
 osquery.db/
 server.log
 flagfile.txt
+ctrf/

@@ -107,6 +107,7 @@ require (
 	github.com/cpuguy83/dockercfg v0.3.2 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.6 // indirect
 	github.com/creack/pty v1.1.24 // indirect
+	github.com/ctrf-io/go-ctrf-json-reporter v0.0.15 // indirect
 	github.com/cyphar/filepath-securejoin v0.4.1 // indirect
 	github.com/cznic/mathutil v0.0.0-20180504122225-ca4c9f2c1369 // indirect
 	github.com/danieljoos/wincred v1.1.2 // indirect
@@ -329,6 +330,7 @@ require (
 tool (
 	github.com/a-h/templ/cmd/templ
 	github.com/air-verse/air
+	github.com/ctrf-io/go-ctrf-json-reporter/cmd/go-ctrf-json-reporter
 	github.com/go-delve/delve/cmd/dlv
 	github.com/go-task/task/v3/cmd/task
 	github.com/golang-migrate/migrate/v4/cmd/migrate
