@@ -222,15 +222,28 @@ func (r *HostRepository) GetConfigForHost(ctx context.Context, nodeKey string) (
 }
 
 func (r *HostRepository) GetPendingQueries(ctx context.Context, hostID uuid.UUID) (map[string]string, error) {
-	// Atomically fetch pending queries and mark them sent.
+	// Atomically fetch pending campaign targets and mark them sent.
 	rows, err := r.pool.Query(ctx, `
-		UPDATE distributed_query_targets t
-		SET status = 'sent', updated_at = NOW()
-		FROM distributed_queries q
-		WHERE t.query_id = q.id
-			AND t.host_id = $1
-			AND t.status = 'pending'
-		RETURNING t.query_id, q.query
+		WITH updated AS (
+			UPDATE campaign_targets t
+			SET status = 'sent', sent_at = NOW(), updated_at = NOW()
+			FROM campaigns c
+			WHERE t.campaign_id = c.id
+				AND t.host_id = $1
+				AND t.status = 'pending'
+				AND c.status IN ('pending', 'running')
+			RETURNING t.campaign_id
+		), campaigns_running AS (
+			UPDATE campaigns c
+			SET status = 'running', updated_at = NOW()
+			FROM updated u
+			WHERE c.id = u.campaign_id
+				AND c.status = 'pending'
+			RETURNING c.id
+		)
+		SELECT u.campaign_id, c.query
+		FROM updated u
+		JOIN campaigns c ON c.id = u.campaign_id
 	`, hostID)
 	if err != nil {
 		return nil, fmt.Errorf("getting pending queries: %w", err)
@@ -239,12 +252,12 @@ func (r *HostRepository) GetPendingQueries(ctx context.Context, hostID uuid.UUID
 
 	queries := make(map[string]string)
 	for rows.Next() {
-		var id uuid.UUID
+		var campaignID uuid.UUID
 		var query string
-		if err := rows.Scan(&id, &query); err != nil {
+		if err := rows.Scan(&campaignID, &query); err != nil {
 			return nil, fmt.Errorf("scanning pending query: %w", err)
 		}
-		queries[id.String()] = query
+		queries[campaignID.String()] = query
 	}
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("iterating pending queries: %w", err)
@@ -254,16 +267,63 @@ func (r *HostRepository) GetPendingQueries(ctx context.Context, hostID uuid.UUID
 }
 
 func (r *HostRepository) SaveQueryResults(ctx context.Context, hostID uuid.UUID, queryID uuid.UUID, status string, results json.RawMessage, errorText *string) error {
-	cmd, err := r.pool.Exec(ctx, `
-		UPDATE distributed_query_targets
-		SET status = $1, results = $2, error = $3, updated_at = NOW()
-		WHERE query_id = $4 AND host_id = $5
-	`, status, results, errorText, queryID, hostID)
+	// In the campaign-based design, queryID is the campaign ID.
+	campaignID := queryID
+
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("saving query results: begin transaction: %w", err)
+	}
+	defer tx.Rollback(ctx)
+
+	cmd, err := tx.Exec(ctx, `
+		UPDATE campaign_targets
+		SET status = $1,
+			results = $2,
+			error = $3,
+			completed_at = NOW(),
+			updated_at = NOW()
+		WHERE campaign_id = $4 AND host_id = $5
+	`, status, results, errorText, campaignID, hostID)
 	if err != nil {
 		return fmt.Errorf("saving query results: %w", err)
 	}
 	if cmd.RowsAffected() == 0 {
-		return fmt.Errorf("saving query results: no target row")
+		return fmt.Errorf("saving query results: no campaign target row")
+	}
+
+	_, err = tx.Exec(ctx, `
+		UPDATE campaigns
+		SET result_count = (
+				SELECT COUNT(*)
+				FROM campaign_targets
+				WHERE campaign_id = $1
+					AND status IN ('completed', 'failed')
+			),
+			status = CASE
+				WHEN EXISTS(
+					SELECT 1
+					FROM campaign_targets
+					WHERE campaign_id = $1
+						AND status IN ('pending', 'sent')
+				) THEN 'running'
+				WHEN EXISTS(
+					SELECT 1
+					FROM campaign_targets
+					WHERE campaign_id = $1
+						AND status = 'failed'
+				) THEN 'failed'
+				ELSE 'completed'
+			END,
+			updated_at = NOW()
+		WHERE id = $1
+	`, campaignID)
+	if err != nil {
+		return fmt.Errorf("saving query results: updating campaign status: %w", err)
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return fmt.Errorf("saving query results: commit transaction: %w", err)
 	}
 	return nil
 }
@@ -278,9 +338,9 @@ type QueryResult struct {
 
 func (r *HostRepository) GetRecentResults(ctx context.Context, hostID uuid.UUID) ([]QueryResult, error) {
 	rows, err := r.pool.Query(ctx, `
-		SELECT q.id, q.query, t.status, t.results, t.updated_at
-		FROM distributed_queries q
-		JOIN distributed_query_targets t ON t.query_id = q.id
+		SELECT c.id, c.query, t.status, t.results, t.updated_at
+		FROM campaigns c
+		JOIN campaign_targets t ON t.campaign_id = c.id
 		WHERE t.host_id = $1
 		ORDER BY t.updated_at DESC
 		LIMIT 10
@@ -304,25 +364,55 @@ func (r *HostRepository) GetRecentResults(ctx context.Context, hostID uuid.UUID)
 	return results, nil
 }
 
-func (r *HostRepository) QueueQuery(ctx context.Context, query string, hostIDs []uuid.UUID) (uuid.UUID, error) {
+func (r *HostRepository) QueueQuery(
+	ctx context.Context,
+	organizationID uuid.UUID,
+	createdBy *int,
+	name *string,
+	description *string,
+	query string,
+	hostIDs []uuid.UUID,
+) (uuid.UUID, error) {
+	if len(hostIDs) == 0 {
+		return uuid.Nil, fmt.Errorf("queue query: no target hosts")
+	}
+
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
 		return uuid.Nil, err
 	}
 	defer tx.Rollback(ctx)
 
-	var queryID uuid.UUID
-	err = tx.QueryRow(ctx, "INSERT INTO distributed_queries (query) VALUES ($1) RETURNING id", query).Scan(&queryID)
+	var campaignID uuid.UUID
+	err = tx.QueryRow(ctx, `
+		INSERT INTO campaigns (
+			organization_id,
+			name,
+			description,
+			query,
+			created_by,
+			status,
+			target_count,
+			result_count,
+			created_at,
+			updated_at
+		)
+		VALUES ($1, $2, $3, $4, $5, 'pending', $6, 0, NOW(), NOW())
+		RETURNING id
+	`, organizationID, name, description, query, createdBy, len(hostIDs)).Scan(&campaignID)
 	if err != nil {
 		return uuid.Nil, err
 	}
 
 	for _, hostID := range hostIDs {
-		_, err = tx.Exec(ctx, "INSERT INTO distributed_query_targets (query_id, host_id) VALUES ($1, $2)", queryID, hostID)
+		_, err = tx.Exec(ctx, `
+			INSERT INTO campaign_targets (campaign_id, host_id)
+			VALUES ($1, $2)
+		`, campaignID, hostID)
 		if err != nil {
 			return uuid.Nil, err
 		}
 	}
 
-	return queryID, tx.Commit(ctx)
+	return campaignID, tx.Commit(ctx)
 }

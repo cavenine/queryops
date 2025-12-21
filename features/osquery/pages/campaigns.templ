@@ -1,0 +1,228 @@
+package pages
+
+import (
+	"fmt"
+
+	"github.com/starfederation/datastar-go/datastar"
+
+	"github.com/cavenine/queryops/features/auth"
+	"github.com/cavenine/queryops/features/common/components"
+	"github.com/cavenine/queryops/features/common/components/button"
+	"github.com/cavenine/queryops/features/common/components/icon"
+	"github.com/cavenine/queryops/features/common/layouts"
+	"github.com/cavenine/queryops/features/organization"
+	"github.com/cavenine/queryops/features/osquery/services"
+)
+
+templ CampaignsPage(title string, campaigns []*services.Campaign) {
+	@layouts.Dashboard(layouts.DashboardProps{
+		Title:     title,
+		Page:      components.PageQueries,
+		User:      auth.GetUserFromContext(ctx),
+		ActiveOrg: organization.GetOrganizationFromContext(ctx),
+		UserOrgs:  organization.GetUserOrganizationsFromContext(ctx),
+	}) {
+		<div class="flex flex-col gap-6">
+			<div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+				<div>
+					<h1 class="text-3xl font-bold tracking-tight">Live Queries</h1>
+					<p class="text-base-content/60 mt-1">Run distributed queries and stream results in real time.</p>
+				</div>
+				@button.Button(button.Props{Href: "/campaigns/new"}) {
+					@icon.Plus(icon.Props{Class: "w-4 h-4"})
+					New Live Query
+				}
+			</div>
+
+			<div class="overflow-x-auto bg-base-100 rounded-lg shadow-sm border border-base-300">
+				<table class="table table-zebra w-full">
+					<thead>
+						<tr>
+							<th>Name</th>
+							<th>Status</th>
+							<th>Targets</th>
+							<th>Query</th>
+							<th></th>
+						</tr>
+					</thead>
+					<tbody>
+						for _, c := range campaigns {
+							<tr>
+								<td>
+									if c.Name != nil {
+										<div class="font-bold">{ *c.Name }</div>
+									} else {
+										<div class="font-bold">(unnamed)</div>
+									}
+									<div class="text-xs opacity-50">{ c.ID.String() }</div>
+								</td>
+								<td>
+									<span class={ "badge badge-sm ", statusBadge(c.Status) }>{ c.Status }</span>
+								</td>
+								<td class="text-sm">{ fmt.Sprintf("%d/%d", c.ResultCount, c.TargetCount) }</td>
+								<td class="font-mono text-xs">{ c.Query }</td>
+								<td>
+									@button.Button(button.Props{Size: button.SizeSm, Variant: button.VariantOutline, Href: fmt.Sprintf("/campaigns/%s", c.ID.String())}) {
+										View
+									}
+								</td>
+							</tr>
+						}
+						if len(campaigns) == 0 {
+							<tr>
+								<td colspan="5" class="text-center text-sm opacity-60 py-8">
+									No live queries yet. Create one to get started.
+								</td>
+							</tr>
+						}
+					</tbody>
+				</table>
+			</div>
+		</div>
+	}
+}
+
+templ CampaignNewPage(title string) {
+	@layouts.Dashboard(layouts.DashboardProps{
+		Title:     title,
+		Page:      components.PageQueries,
+		User:      auth.GetUserFromContext(ctx),
+		ActiveOrg: organization.GetOrganizationFromContext(ctx),
+		UserOrgs:  organization.GetUserOrganizationsFromContext(ctx),
+	}) {
+		<div class="flex flex-col gap-6" data-signals="{name: '', description: '', query: 'SELECT * FROM uptime;'}">
+			<div class="flex items-center gap-4">
+				<a href="/campaigns" class="btn btn-ghost btn-sm">
+					@icon.ChevronLeft(icon.Props{Class: "w-4 h-4"})
+					Back
+				</a>
+				<h1 class="text-3xl font-bold tracking-tight">New Live Query</h1>
+			</div>
+
+			<div class="card bg-base-100 shadow-sm border border-base-300">
+				<div class="card-body flex flex-col gap-4">
+					<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+						<label class="form-control">
+							<div class="label"><span class="label-text">Name (optional)</span></div>
+							<input class="input input-bordered" placeholder="E.g. Check nginx processes" data-bind:name />
+						</label>
+						<label class="form-control">
+							<div class="label"><span class="label-text">Description (optional)</span></div>
+							<input class="input input-bordered" placeholder="E.g. Audit running daemons" data-bind:description />
+						</label>
+					</div>
+
+					<label class="form-control">
+						<div class="label"><span class="label-text">SQL Query</span></div>
+						<textarea class="textarea textarea-bordered w-full font-mono text-sm h-48" data-bind:query></textarea>
+						<div class="label"><span class="label-text-alt opacity-60">Targets: all hosts in current org (for now)</span></div>
+					</label>
+
+					<div class="flex justify-end gap-2">
+						@button.Button(button.Props{Variant: button.VariantOutline, Href: "/campaigns"}) { Cancel }
+						<button class="btn btn-primary" data-on:click={ datastar.PostSSE("/campaigns/run") }>Run Live Query</button>
+					</div>
+				</div>
+			</div>
+		</div>
+	}
+}
+
+templ CampaignDetailsPage(title string, campaign *services.Campaign, targets []*services.CampaignTarget) {
+	@layouts.Dashboard(layouts.DashboardProps{
+		Title:     title,
+		Page:      components.PageQueries,
+		User:      auth.GetUserFromContext(ctx),
+		ActiveOrg: organization.GetOrganizationFromContext(ctx),
+		UserOrgs:  organization.GetUserOrganizationsFromContext(ctx),
+	}) {
+		<div class="flex flex-col gap-6">
+			<div class="flex items-center gap-4">
+				<a href="/campaigns" class="btn btn-ghost btn-sm">
+					@icon.ChevronLeft(icon.Props{Class: "w-4 h-4"})
+					Back to Live Queries
+				</a>
+				<h1 class="text-3xl font-bold tracking-tight">Campaign</h1>
+			</div>
+
+			@CampaignResultsTable(campaign.ID.String(), campaign, targets)
+		</div>
+	}
+}
+
+templ CampaignResultsTable(campaignID string, campaign *services.Campaign, targets []*services.CampaignTarget) {
+	<div id="campaign-results-container" data-init={ datastar.GetSSE("/campaigns/%s/results", campaignID) }>
+		<div class="flex flex-col gap-4">
+			<div class="flex flex-col md:flex-row md:items-center justify-between gap-2">
+				<div class="flex flex-col gap-1">
+					<div class="flex items-center gap-2">
+						<span class={ "badge badge-sm ", statusBadge(campaign.Status) }>{ campaign.Status }</span>
+						<span class="text-sm opacity-60">{ fmt.Sprintf("%d/%d hosts", campaign.ResultCount, campaign.TargetCount) }</span>
+					</div>
+					if campaign.Name != nil {
+						<h2 class="text-xl font-bold">{ *campaign.Name }</h2>
+					} else {
+						<h2 class="text-xl font-bold">(unnamed)</h2>
+					}
+					if campaign.Description != nil {
+						<p class="text-sm opacity-70">{ *campaign.Description }</p>
+					}
+				</div>
+				<div class="text-xs font-mono opacity-60">{ campaign.ID.String() }</div>
+			</div>
+
+			<div class="card bg-base-100 shadow-sm border border-base-300">
+				<div class="card-body">
+					<h3 class="card-title text-sm opacity-60">Query</h3>
+					<pre class="text-xs font-mono whitespace-pre-wrap">{ campaign.Query }</pre>
+				</div>
+			</div>
+
+			<div class="overflow-x-auto bg-base-100 rounded-lg shadow-sm border border-base-300">
+				<table class="table w-full">
+					<thead>
+						<tr>
+							<th>Host</th>
+							<th>Status</th>
+							<th>Results</th>
+							<th>Finished</th>
+						</tr>
+					</thead>
+					<tbody>
+						for _, t := range targets {
+							<tr>
+								<td class="text-sm font-semibold">{ t.HostIdentifier }</td>
+								<td>
+									<span class={ "badge badge-sm ", statusBadge(t.Status) }>{ t.Status }</span>
+								</td>
+								<td>
+									if t.Results != nil {
+										<details class="collapse bg-base-200">
+											<summary class="collapse-title text-xs cursor-pointer py-2 min-h-0">View Results</summary>
+											<div class="collapse-content overflow-auto max-h-60">
+												<pre class="text-[10px]">{ formatJSON(t.Results) }</pre>
+											</div>
+										</details>
+									}
+									if t.Error != nil {
+										<div class="text-xs text-error">{ *t.Error }</div>
+									}
+								</td>
+								<td class="text-xs">
+									if t.CompletedAt != nil {
+										{ t.CompletedAt.Format("15:04:05") }
+									}
+								</td>
+							</tr>
+						}
+						if len(targets) == 0 {
+							<tr>
+								<td colspan="4" class="text-center text-sm opacity-60 py-8">No targets.</td>
+							</tr>
+						}
+					</tbody>
+				</table>
+			</div>
+		</div>
+	</div>
+}

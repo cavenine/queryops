@@ -1,9 +1,10 @@
 # Proposal 001: Live Query Results Streaming via SSE with Watermill Pub/Sub
 
-**Status:** Draft  
+**Status:** In Progress (Pivoting to Campaign-Based Design)  
 **Author:** AI Assistant  
 **Created:** 2025-12-20  
-**Related Issues:** TBD (will be created after proposal review)
+**Updated:** 2025-12-20 (Major revision: Pivot from host-based to campaign-based topics)  
+**Related Issues:** See beads tracking (queryops-xuz epic)
 
 ---
 
@@ -191,32 +192,49 @@ Watermill is purpose-built for pub/sub patterns and has first-class PostgreSQL s
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
-│                             PROPOSED FLOW                               │
+│                       CAMPAIGN-BASED FLOW                               │
 └─────────────────────────────────────────────────────────────────────────┘
 
   Browser                    Web Server                    Database
      │                           │                            │
-     │  GET /hosts/:id/results   │                            │
+     │  POST /api/v1/queries/run │                            │
+     │  { query, host_ids? }     │                            │
+     │ ─────────────────────────►│                            │
+     │                           │  INSERT campaign           │
+     │                           │  INSERT campaign_targets   │
+     │                           │ ──────────────────────────►│
+     │◄──────────────────────────│◄───────────────────────────│
+     │  { campaign_id, count }   │                            │
+     │                           │                            │
+     │  GET /campaigns/:id/results                            │
      │ ─────────────────────────►│                            │
      │        (SSE open)         │                            │
-     │                           │  SELECT initial results    │
+     │                           │  SELECT campaign + results │
      │◄──────────────────────────│◄───────────────────────────│
-     │    Initial results        │                            │
+     │    Initial state          │                            │
      │                           │                            │
-     │                           │  SUBSCRIBE query_results   │
+     │                           │  SUBSCRIBE campaign:{id}   │
      │                           │ ──────────────────────────►│
      │                           │        (waiting...)        │
-     │                           │                            │
 
 
   osquery Agent              Web Server                    Database
      │                           │                            │
+     │  POST /distributed_read   │                            │
+     │ ─────────────────────────►│                            │
+     │                           │  SELECT pending queries    │
+     │                           │ ──────────────────────────►│
+     │◄──────────────────────────│◄───────────────────────────│
+     │   { queries: {...} }      │  (linked to campaign)      │
+     │                           │                            │
+     │   (executes query)        │                            │
+     │                           │                            │
      │  POST /distributed_write  │                            │
      │ ─────────────────────────►│                            │
-     │                           │  UPDATE targets → results  │
+     │                           │  UPDATE campaign_targets   │
      │                           │ ──────────────────────────►│
      │                           │                            │
-     │                           │  PUBLISH query_result_event│
+     │                           │  PUBLISH campaign:{id}     │
      │                           │ ──────────────────────────►│
      │◄──────────────────────────│                            │
      │        200 OK             │                            │
@@ -224,34 +242,44 @@ Watermill is purpose-built for pub/sub patterns and has first-class PostgreSQL s
 
   Web Server (SSE Handler)                               Database
      │                                                      │
-     │              (receives published event)              │
+     │        (receives CampaignResultEvent)                │
      │◄─────────────────────────────────────────────────────│
      │                                                      │
-     │  SELECT updated results (optional)                   │
+     │  SELECT campaign + results                           │
      │ ────────────────────────────────────────────────────►│
      │◄─────────────────────────────────────────────────────│
      │                                                      │
      │  PUSH to browser via SSE                             │
+     │  (renders updated campaign progress)                 │
      │                                                      │
 
 
   Browser                    Web Server
      │                           │
      │◄──────────────────────────│
-     │   SSE: Updated results    │
-     │   (instant!)              │
+     │   SSE: Host X completed   │
+     │   SSE: Host Y completed   │
+     │   SSE: Campaign done!     │
+     │   (stream closes)         │
 ```
 
 ### Topic Design
 
-**Topic naming:** `query_results:{host_id}`
+**Topic naming:** `campaign:{campaign_id}`
 
-Each host gets its own topic. When a browser opens the host details page, it subscribes to that host's topic. When results arrive for any query on that host, all connected browsers receive the update.
+Each distributed query execution creates a **campaign** — a first-class entity that tracks the query execution across one or more hosts. When a user submits a query, they receive a `campaign_id` and can subscribe to that campaign's results via a dedicated SSE endpoint.
+
+**Key Concepts:**
+- **Campaign:** A unique execution of a query, potentially targeting multiple hosts
+- **Campaign ID:** UUID returned when submitting a query, used to subscribe to results
+- **Topic:** `campaign:{campaign_id}` — each campaign has its own pub/sub topic
 
 **Rationale:**
-- Matches UI subscription pattern (per-host details page)
-- Simple to implement and reason about
-- Efficient for typical use case (few viewers per host)
+- **Dedicated query execution experience:** Submit query → get campaign ID → watch just that query's results
+- **Filtering:** Hosts may return results from many queries; campaign-based topics filter to just "your" query
+- **Multi-host queries:** A campaign can target multiple hosts; results from all hosts aggregate into one stream
+- **Audit/history:** Campaign IDs provide a first-class entity for tracking execution history
+- **Clean separation:** Host details page can still show recent results, but live query execution gets its own UX
 
 ---
 
@@ -265,9 +293,43 @@ internal/
     ├── pubsub.go        # PubSub struct, New(), Close()
     ├── publisher.go     # Publisher wrapper and helpers
     ├── subscriber.go    # Subscriber wrapper and helpers
-    ├── events.go        # Event type definitions
-    ├── schema.go        # Custom PostgreSQL schema adapter (if needed)
+    ├── events.go        # Event type definitions (campaign events)
+    ├── schema.go        # Custom PostgreSQL schema adapter (shared tables)
     └── logger.go        # Watermill logger adapter for slog
+
+features/
+└── osquery/
+    └── services/
+        └── campaign_repository.go  # Campaign CRUD operations
+```
+
+### 4.1.1 Campaign Entity
+
+A **Campaign** represents a single execution of a distributed query:
+
+```go
+// features/osquery/services/campaign.go
+
+type Campaign struct {
+    ID          uuid.UUID  `json:"id"`
+    OrgID       uuid.UUID  `json:"org_id"`
+    Query       string     `json:"query"`
+    CreatedAt   time.Time  `json:"created_at"`
+    CreatedBy   uuid.UUID  `json:"created_by"`      // User who initiated
+    Status      string     `json:"status"`          // pending, running, completed, failed
+    TargetCount int        `json:"target_count"`    // Number of hosts targeted
+    ResultCount int        `json:"result_count"`    // Number of results received
+}
+
+type CampaignTarget struct {
+    CampaignID  uuid.UUID  `json:"campaign_id"`
+    HostID      uuid.UUID  `json:"host_id"`
+    Status      string     `json:"status"`          // pending, sent, completed, failed
+    SentAt      *time.Time `json:"sent_at,omitempty"`
+    ResultAt    *time.Time `json:"result_at,omitempty"`
+    Result      *string    `json:"result,omitempty"`
+    Error       *string    `json:"error,omitempty"`
+}
 ```
 
 ### 4.2 Core Types
@@ -375,18 +437,21 @@ import (
     "github.com/google/uuid"
 )
 
-// TopicQueryResults returns the topic name for a host's query results.
-func TopicQueryResults(hostID uuid.UUID) string {
-    return fmt.Sprintf("query_results:%s", hostID.String())
+// TopicCampaign returns the topic name for a campaign's results.
+func TopicCampaign(campaignID uuid.UUID) string {
+    return fmt.Sprintf("campaign:%s", campaignID.String())
 }
 
-// QueryResultEvent is published when distributed query results are saved.
-type QueryResultEvent struct {
+// CampaignResultEvent is published when a host returns results for a campaign.
+type CampaignResultEvent struct {
+    // CampaignID is the campaign this result belongs to.
+    CampaignID uuid.UUID `json:"campaign_id"`
+    
     // HostID is the host that executed the query.
     HostID uuid.UUID `json:"host_id"`
     
-    // QueryID is the distributed query ID.
-    QueryID uuid.UUID `json:"query_id"`
+    // HostIdentifier is the human-readable host identifier.
+    HostIdentifier string `json:"host_identifier"`
     
     // Status is the result status: "completed" or "failed".
     Status string `json:"status"`
@@ -394,27 +459,48 @@ type QueryResultEvent struct {
     // OccurredAt is when the result was saved.
     OccurredAt time.Time `json:"occurred_at"`
     
+    // RowCount is the number of result rows (for completed status).
+    RowCount int `json:"row_count,omitempty"`
+    
     // Error is set if status is "failed".
     Error *string `json:"error,omitempty"`
 }
 
 // ToMessage converts the event to a Watermill message.
-func (e QueryResultEvent) ToMessage() *message.Message {
+func (e CampaignResultEvent) ToMessage() *message.Message {
     payload, _ := json.Marshal(e)
     msg := message.NewMessage(uuid.New().String(), payload)
-    msg.Metadata.Set("event_type", "query_result")
+    msg.Metadata.Set("event_type", "campaign_result")
+    msg.Metadata.Set("campaign_id", e.CampaignID.String())
     msg.Metadata.Set("host_id", e.HostID.String())
-    msg.Metadata.Set("query_id", e.QueryID.String())
     return msg
 }
 
-// ParseQueryResultEvent parses a Watermill message into a QueryResultEvent.
-func ParseQueryResultEvent(msg *message.Message) (QueryResultEvent, error) {
-    var event QueryResultEvent
+// ParseCampaignResultEvent parses a Watermill message into a CampaignResultEvent.
+func ParseCampaignResultEvent(msg *message.Message) (CampaignResultEvent, error) {
+    var event CampaignResultEvent
     if err := json.Unmarshal(msg.Payload, &event); err != nil {
-        return event, fmt.Errorf("parsing query result event: %w", err)
+        return event, fmt.Errorf("parsing campaign result event: %w", err)
     }
     return event, nil
+}
+
+// CampaignStatusEvent is published when the overall campaign status changes.
+type CampaignStatusEvent struct {
+    CampaignID  uuid.UUID `json:"campaign_id"`
+    Status      string    `json:"status"`       // running, completed, failed
+    OccurredAt  time.Time `json:"occurred_at"`
+    ResultCount int       `json:"result_count"` // Total results received so far
+    TargetCount int       `json:"target_count"` // Total hosts targeted
+}
+
+// ToMessage converts the event to a Watermill message.
+func (e CampaignStatusEvent) ToMessage() *message.Message {
+    payload, _ := json.Marshal(e)
+    msg := message.NewMessage(uuid.New().String(), payload)
+    msg.Metadata.Set("event_type", "campaign_status")
+    msg.Metadata.Set("campaign_id", e.CampaignID.String())
+    return msg
 }
 ```
 
@@ -486,28 +572,56 @@ func (s *SlogAdapter) toAttrs(fields watermill.LogFields, err error) []any {
 
 ### 4.5 Handler Changes
 
-#### DistributedWrite Handler (Publishing)
+#### RunQuery Handler (Create Campaign)
 
 ```go
 // features/osquery/handlers.go
 
-type Handlers struct {
-    repo       hostRepository
-    orgService enrollmentOrgLookup
-    publisher  message.Publisher  // NEW: Watermill publisher
+type RunQueryRequest struct {
+    Query   string      `json:"query"`
+    HostIDs []uuid.UUID `json:"host_ids,omitempty"` // Optional: specific hosts
 }
 
-func NewHandlers(
-    repo hostRepository,
-    orgService enrollmentOrgLookup,
-    publisher message.Publisher,  // NEW
-) *Handlers {
-    return &Handlers{
-        repo:       repo,
-        orgService: orgService,
-        publisher:  publisher,
-    }
+type RunQueryResponse struct {
+    CampaignID  uuid.UUID `json:"campaign_id"`
+    TargetCount int       `json:"target_count"`
 }
+
+func (h *Handlers) RunQuery(w http.ResponseWriter, r *http.Request) {
+    ctx := r.Context()
+    org := organization.FromContext(ctx)
+    user := auth.UserFromContext(ctx)
+    
+    var req RunQueryRequest
+    if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+        http.Error(w, "invalid request", http.StatusBadRequest)
+        return
+    }
+    
+    // Create campaign
+    campaign, err := h.repo.CreateCampaign(ctx, services.CreateCampaignParams{
+        OrgID:     org.ID,
+        Query:     req.Query,
+        CreatedBy: user.ID,
+        HostIDs:   req.HostIDs, // nil = all hosts in org
+    })
+    if err != nil {
+        slog.Error("failed to create campaign", "error", err)
+        http.Error(w, "failed to create campaign", http.StatusInternalServerError)
+        return
+    }
+    
+    h.jsonResponse(w, RunQueryResponse{
+        CampaignID:  campaign.ID,
+        TargetCount: campaign.TargetCount,
+    })
+}
+```
+
+#### DistributedWrite Handler (Publishing to Campaign Topic)
+
+```go
+// features/osquery/handlers.go
 
 func (h *Handlers) DistributedWrite(w http.ResponseWriter, r *http.Request) {
     // ... existing validation and parsing ...
@@ -526,27 +640,30 @@ func (h *Handlers) DistributedWrite(w http.ResponseWriter, r *http.Request) {
 
         // ... existing result marshaling ...
 
-        if err := h.repo.SaveQueryResults(r.Context(), host.ID, queryID, status, resJSON, errorText); err != nil {
+        // Save results and get campaign ID
+        campaignID, err := h.repo.SaveQueryResults(r.Context(), host.ID, queryID, status, resJSON, errorText)
+        if err != nil {
             slog.Error("failed to save query results", "error", err)
-            continue  // Don't fail the whole request
+            continue
         }
 
-        // NEW: Publish event for SSE subscribers
-        if h.publisher != nil {
-            event := pubsub.QueryResultEvent{
-                HostID:     host.ID,
-                QueryID:    queryID,
-                Status:     status,
-                OccurredAt: time.Now(),
-                Error:      errorText,
+        // Publish event to campaign topic for SSE subscribers
+        if h.publisher != nil && campaignID != nil {
+            event := pubsub.CampaignResultEvent{
+                CampaignID:     *campaignID,
+                HostID:         host.ID,
+                HostIdentifier: host.HostIdentifier,
+                Status:         status,
+                OccurredAt:     time.Now(),
+                RowCount:       len(req.Queries[queryIDStr]),
+                Error:          errorText,
             }
-            topic := pubsub.TopicQueryResults(host.ID)
+            topic := pubsub.TopicCampaign(*campaignID)
             if err := h.publisher.Publish(topic, event.ToMessage()); err != nil {
-                // Log but don't fail - results are saved, pub is best-effort
-                slog.Error("failed to publish query result event",
+                slog.Error("failed to publish campaign result event",
                     "error", err,
+                    "campaign_id", campaignID,
                     "host_id", host.ID,
-                    "query_id", queryID,
                 )
             }
         }
@@ -556,58 +673,76 @@ func (h *Handlers) DistributedWrite(w http.ResponseWriter, r *http.Request) {
 }
 ```
 
-#### HostResultsSSE Handler (Subscribing)
+#### CampaignResultsSSE Handler (New Endpoint)
 
 ```go
 // features/osquery/handlers.go
 
-type Handlers struct {
-    repo         hostRepository
-    orgService   enrollmentOrgLookup
-    publisher    message.Publisher
-    pubsub       *pubsub.PubSub  // NEW: For creating subscribers
-}
-
-func (h *Handlers) HostResultsSSE(w http.ResponseWriter, r *http.Request) {
-    // ... existing validation (host ID, org check) ...
-
+// CampaignResultsSSE streams results for a specific campaign via SSE.
+// GET /campaigns/:id/results
+func (h *Handlers) CampaignResultsSSE(w http.ResponseWriter, r *http.Request) {
     ctx := r.Context()
+    org := organization.FromContext(ctx)
+    
+    campaignIDStr := chi.URLParam(r, "id")
+    campaignID, err := uuid.Parse(campaignIDStr)
+    if err != nil {
+        http.Error(w, "invalid campaign id", http.StatusBadRequest)
+        return
+    }
+    
+    // Verify campaign belongs to org
+    campaign, err := h.repo.GetCampaign(ctx, campaignID)
+    if err != nil {
+        http.Error(w, "campaign not found", http.StatusNotFound)
+        return
+    }
+    if campaign.OrgID != org.ID {
+        http.Error(w, "not found", http.StatusNotFound)
+        return
+    }
+    
     sse := datastar.NewSSE(w, r)
-
-    // 1. Send initial state immediately
-    results, err := h.repo.GetRecentResults(ctx, hostID)
+    
+    // 1. Send initial state (campaign info + any existing results)
+    results, err := h.repo.GetCampaignResults(ctx, campaignID)
     if err != nil {
         _ = sse.ConsoleError(err)
         return
     }
-    if err := sse.PatchElementTempl(pages.HostResultsTable(hostIDStr, results)); err != nil {
+    if err := sse.PatchElementTempl(pages.CampaignResults(campaign, results)); err != nil {
         return
     }
-
-    // 2. If pub/sub is not available, fall back to polling
+    
+    // 2. If campaign already completed, no need to subscribe
+    if campaign.Status == "completed" || campaign.Status == "failed" {
+        return
+    }
+    
+    // 3. If pub/sub not available, fall back to polling
     if h.pubsub == nil {
-        h.pollResultsLegacy(ctx, sse, hostID, hostIDStr, results)
+        h.pollCampaignResultsLegacy(ctx, sse, campaign, results)
         return
     }
-
-    // 3. Subscribe to query result events for this host
+    
+    // 4. Subscribe to campaign topic
     subscriber, err := h.pubsub.NewSubscriber(ctx)
     if err != nil {
         slog.Error("failed to create subscriber, falling back to polling", "error", err)
-        h.pollResultsLegacy(ctx, sse, hostID, hostIDStr, results)
+        h.pollCampaignResultsLegacy(ctx, sse, campaign, results)
         return
     }
     defer subscriber.Close()
-
-    topic := pubsub.TopicQueryResults(hostID)
+    
+    topic := pubsub.TopicCampaign(campaignID)
     messages, err := subscriber.Subscribe(ctx, topic)
     if err != nil {
         slog.Error("failed to subscribe, falling back to polling", "error", err)
-        h.pollResultsLegacy(ctx, sse, hostID, hostIDStr, results)
+        h.pollCampaignResultsLegacy(ctx, sse, campaign, results)
         return
     }
-
-    // 4. Stream updates as events arrive
+    
+    // 5. Stream updates as results arrive
     for {
         select {
         case <-ctx.Done():
@@ -615,43 +750,50 @@ func (h *Handlers) HostResultsSSE(w http.ResponseWriter, r *http.Request) {
             
         case msg := <-messages:
             if msg == nil {
-                // Channel closed, subscriber shutting down
                 return
             }
             
-            event, err := pubsub.ParseQueryResultEvent(msg)
+            event, err := pubsub.ParseCampaignResultEvent(msg)
             if err != nil {
                 slog.Error("failed to parse event", "error", err)
                 msg.Nack()
                 continue
             }
             
-            // Fetch fresh results to display
-            // (Alternative: Use event data directly for single-row update)
-            results, err := h.repo.GetRecentResults(ctx, hostID)
+            // Re-fetch campaign and results
+            campaign, err = h.repo.GetCampaign(ctx, campaignID)
             if err != nil {
-                slog.Error("failed to get results after event", "error", err)
                 msg.Nack()
                 continue
             }
             
-            if err := sse.PatchElementTempl(pages.HostResultsTable(hostIDStr, results)); err != nil {
+            results, err = h.repo.GetCampaignResults(ctx, campaignID)
+            if err != nil {
+                msg.Nack()
+                continue
+            }
+            
+            if err := sse.PatchElementTempl(pages.CampaignResults(campaign, results)); err != nil {
                 msg.Nack()
                 return
             }
             
             msg.Ack()
+            
+            // If campaign completed, close stream
+            if campaign.Status == "completed" || campaign.Status == "failed" {
+                return
+            }
         }
     }
 }
 
-// pollResultsLegacy is the fallback polling implementation.
-func (h *Handlers) pollResultsLegacy(
+// pollCampaignResultsLegacy is the fallback polling implementation.
+func (h *Handlers) pollCampaignResultsLegacy(
     ctx context.Context,
     sse *datastar.ServerSentEventGenerator,
-    hostID uuid.UUID,
-    hostIDStr string,
-    initialResults []services.QueryResult,
+    campaign *services.Campaign,
+    initialResults []services.CampaignResult,
 ) {
     ticker := time.NewTicker(time.Second)
     defer ticker.Stop()
@@ -662,7 +804,13 @@ func (h *Handlers) pollResultsLegacy(
         case <-ctx.Done():
             return
         case <-ticker.C:
-            results, err := h.repo.GetRecentResults(ctx, hostID)
+            campaign, err := h.repo.GetCampaign(ctx, campaign.ID)
+            if err != nil {
+                _ = sse.ConsoleError(err)
+                return
+            }
+            
+            results, err := h.repo.GetCampaignResults(ctx, campaign.ID)
             if err != nil {
                 _ = sse.ConsoleError(err)
                 return
@@ -671,9 +819,14 @@ func (h *Handlers) pollResultsLegacy(
             b, _ := json.Marshal(results)
             if !bytes.Equal(b, last) {
                 last = b
-                if err := sse.PatchElementTempl(pages.HostResultsTable(hostIDStr, results)); err != nil {
+                if err := sse.PatchElementTempl(pages.CampaignResults(campaign, results)); err != nil {
                     return
                 }
+            }
+            
+            // Stop polling if campaign completed
+            if campaign.Status == "completed" || campaign.Status == "failed" {
+                return
             }
         }
     }
@@ -684,68 +837,162 @@ func (h *Handlers) pollResultsLegacy(
 
 ## 5. Database Schema
 
-### 5.1 Watermill Tables
-
-Watermill's `DefaultPostgreSQLSchema` creates tables with this structure:
+### 5.1 Campaign Tables (New)
 
 ```sql
--- Messages table (one per topic, or shared with topic column)
-CREATE TABLE IF NOT EXISTS watermill_messages (
-    "offset" BIGSERIAL PRIMARY KEY,
-    "uuid" VARCHAR(36) NOT NULL,
-    "created_at" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "payload" JSONB NOT NULL,
-    "metadata" JSONB NOT NULL,
-    "topic" VARCHAR(255) NOT NULL
+-- Campaigns table tracks distributed query executions
+CREATE TABLE IF NOT EXISTS campaigns (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    org_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    query TEXT NOT NULL,
+    created_by UUID NOT NULL REFERENCES users(id),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    status VARCHAR(20) NOT NULL DEFAULT 'pending', -- pending, running, completed, failed
+    target_count INT NOT NULL DEFAULT 0,
+    result_count INT NOT NULL DEFAULT 0
 );
 
-CREATE INDEX IF NOT EXISTS idx_watermill_messages_topic_offset 
-    ON watermill_messages (topic, "offset");
+CREATE INDEX idx_campaigns_org_id ON campaigns(org_id);
+CREATE INDEX idx_campaigns_created_at ON campaigns(created_at DESC);
+CREATE INDEX idx_campaigns_status ON campaigns(status) WHERE status IN ('pending', 'running');
 
--- Offsets table (tracks consumer group positions)
+-- Campaign targets tracks which hosts are targeted and their results
+CREATE TABLE IF NOT EXISTS campaign_targets (
+    campaign_id UUID NOT NULL REFERENCES campaigns(id) ON DELETE CASCADE,
+    host_id UUID NOT NULL REFERENCES hosts(id) ON DELETE CASCADE,
+    status VARCHAR(20) NOT NULL DEFAULT 'pending', -- pending, sent, completed, failed
+    sent_at TIMESTAMPTZ,
+    result_at TIMESTAMPTZ,
+    result JSONB,
+    error TEXT,
+    PRIMARY KEY (campaign_id, host_id)
+);
+
+CREATE INDEX idx_campaign_targets_host_id ON campaign_targets(host_id);
+CREATE INDEX idx_campaign_targets_pending ON campaign_targets(campaign_id) WHERE status = 'pending';
+```
+
+### 5.2 Watermill Tables (Shared Schema)
+
+**Important:** We use a custom shared-table schema because Watermill's default PostgreSQL schema creates **per-topic tables**. With dynamic topics like `campaign:{uuid}`, that would create an unbounded number of tables.
+
+```sql
+-- Shared messages table for all topics
+CREATE TABLE IF NOT EXISTS watermill_messages (
+    "offset" BIGSERIAL,
+    "uuid" VARCHAR(36) NOT NULL,
+    "topic" VARCHAR(255) NOT NULL,
+    "created_at" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    "payload" JSONB NOT NULL,
+    "metadata" JSONB NOT NULL,
+    "transaction_id" XID8 NOT NULL DEFAULT pg_current_xact_id(),
+    PRIMARY KEY ("topic", "offset")
+);
+
+CREATE INDEX idx_watermill_messages_created_at ON watermill_messages(created_at);
+
+-- Shared offsets table for all consumer groups
 CREATE TABLE IF NOT EXISTS watermill_offsets (
     consumer_group VARCHAR(255) NOT NULL,
     topic VARCHAR(255) NOT NULL,
-    offset_acked BIGINT NOT NULL,
+    offset_acked BIGINT NOT NULL DEFAULT 0,
     last_processed_transaction_id XID8,
     PRIMARY KEY (consumer_group, topic)
 );
 ```
 
-### 5.2 Migration Strategy
+### 5.3 Migration Strategy
 
-**Option A: Auto-initialize (Development)**
-- Set `AutoInitializeSchema: true` in config
-- Watermill creates tables on first publish/subscribe
-- Simple, but less control
+We use **explicit migrations** (already implemented):
+- `migrations/sql/20251221022000_watermill_pubsub.up.sql` - creates shared Watermill tables
+- Campaign tables will need a new migration
 
-**Option B: Explicit Migration (Production)**
-- Create migration file: `migrations/sql/YYYYMMDDHHMMSS_watermill_pubsub.up.sql`
-- Set `AutoInitializeSchema: false` in config
-- Full control, audit trail
+### 5.4 Message Retention
 
-**Recommendation:** Option B for production safety. The migration should be idempotent.
+With campaign-based topics:
+- Messages are only relevant while the campaign is active
+- Once a campaign completes, messages can be cleaned up
+- **Cleanup strategy:** Background job deletes messages for completed campaigns older than N hours
 
-### 5.3 Message Retention
-
-By default, Watermill keeps all messages. For this use case (ephemeral notifications), consider:
-
-1. **Periodic cleanup job** - Delete messages older than N hours
-2. **Use Queue schema** - `DeleteOnAck: true` removes messages after processing
-3. **PostgreSQL partitioning** - Partition by date for easy cleanup
-
-For MVP, we'll use default behavior and add cleanup later if needed.
+```sql
+-- Cleanup completed campaign messages (run periodically)
+DELETE FROM watermill_messages 
+WHERE topic LIKE 'campaign:%' 
+AND created_at < NOW() - INTERVAL '24 hours';
+```
 
 ---
 
 ## 6. API Changes
 
-### 6.1 No External API Changes
+### 6.1 New HTTP Endpoints
 
-The feature is entirely internal. No changes to:
-- HTTP routes
-- Request/response formats
-- osquery TLS protocol
+#### Run Query (Create Campaign)
+
+```
+POST /api/v1/queries/run
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+    "query": "SELECT * FROM processes WHERE name = 'nginx';",
+    "host_ids": ["uuid1", "uuid2"]  // Optional: omit for all hosts in org
+}
+
+Response 201:
+{
+    "campaign_id": "550e8400-e29b-41d4-a716-446655440000",
+    "target_count": 15
+}
+```
+
+#### Campaign Results SSE Stream
+
+```
+GET /api/v1/campaigns/{id}/results
+Authorization: Bearer <token>
+Accept: text/event-stream
+
+Response: SSE stream with campaign progress updates
+```
+
+#### Get Campaign Status
+
+```
+GET /api/v1/campaigns/{id}
+Authorization: Bearer <token>
+
+Response 200:
+{
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "query": "SELECT * FROM processes WHERE name = 'nginx';",
+    "status": "running",
+    "created_at": "2025-12-20T10:00:00Z",
+    "target_count": 15,
+    "result_count": 8
+}
+```
+
+#### List Campaigns
+
+```
+GET /api/v1/campaigns
+Authorization: Bearer <token>
+
+Response 200:
+{
+    "campaigns": [
+        {
+            "id": "...",
+            "query": "...",
+            "status": "completed",
+            "created_at": "...",
+            "target_count": 15,
+            "result_count": 15
+        }
+    ]
+}
+```
 
 ### 6.2 Internal Interface Changes
 
@@ -764,7 +1011,15 @@ func NewHandlers(
 ) *Handlers
 ```
 
-### 6.3 Graceful Degradation
+### 6.3 osquery Protocol (Unchanged)
+
+The osquery TLS endpoints remain unchanged:
+- `POST /distributed_read` - returns pending queries (now linked to campaigns)
+- `POST /distributed_write` - receives results (now publishes to campaign topic)
+
+The campaign system is transparent to osquery agents.
+
+### 6.4 Graceful Degradation
 
 If pub/sub initialization fails:
 - Handlers continue to work
@@ -775,78 +1030,91 @@ If pub/sub initialization fails:
 
 ## 7. Implementation Phases
 
-### Phase 1: Infrastructure Foundation
+### Phase 1: Infrastructure Foundation ✅ (Completed)
 
 **Goal:** Set up Watermill with PostgreSQL, verify basic pub/sub works.
 
+**Status:** DONE - Watermill with shared-table schema implemented.
+
+**Completed:**
+- ✅ Added Watermill dependencies to `go.mod`
+- ✅ Created `internal/pubsub/` package with core types
+- ✅ Implemented slog adapter for Watermill logging
+- ✅ Created database migration for shared Watermill tables
+- ✅ Added PubSub initialization to `cmd/web/web.go`
+- ✅ Integration tests proving publish/subscribe works
+
+### Phase 2: Campaign Entity & Database
+
+**Goal:** Create the campaign data model and persistence layer.
+
 **Tasks:**
-1. Add dependencies to `go.mod`
-2. Create `internal/pubsub/` package with core types
-3. Implement slog adapter for Watermill logging
-4. Create database migration for Watermill tables
-5. Add PubSub initialization to `cmd/web/web.go`
-6. Write integration test proving publish/subscribe works
+1. Create migration for `campaigns` and `campaign_targets` tables
+2. Create `CampaignRepository` with CRUD operations
+3. Update `distributed_queries` to link to campaigns
+4. Add tests for campaign repository
 
 **Acceptance Criteria:**
-- `go build` succeeds with new dependencies
 - Migration runs successfully
-- Test demonstrates message round-trip
+- Can create campaigns, add targets, update results
+- Query results correctly link back to campaigns
 
-### Phase 2: Publish Query Results
+### Phase 3: Campaign API Endpoints
 
-**Goal:** Publish events when distributed query results are saved.
+**Goal:** Expose campaign operations via HTTP API.
 
 **Tasks:**
-1. Define `QueryResultEvent` type
-2. Add publisher to `Handlers` struct
-3. Modify `DistributedWrite` to publish after `SaveQueryResults`
-4. Update route setup to inject publisher
-5. Add unit tests with mock publisher
+1. Implement `POST /api/v1/queries/run` (create campaign)
+2. Implement `GET /api/v1/campaigns/{id}` (get campaign)
+3. Implement `GET /api/v1/campaigns` (list campaigns)
+4. Add route registration and middleware
+5. Add API tests
 
 **Acceptance Criteria:**
-- `DistributedWrite` publishes event on success
-- Publish failures are logged but don't fail the request
-- Unit tests pass with mock publisher
+- Can create campaigns via API
+- Campaign status and results accessible
+- Proper org-scoping and authorization
 
-### Phase 3: Subscribe and Stream
+### Phase 4: Campaign Results SSE Streaming
 
-**Goal:** SSE handler subscribes to events and pushes updates.
+**Goal:** Stream campaign results via pub/sub + SSE.
 
 **Tasks:**
-1. Add `pubsub` field to `Handlers` struct
-2. Refactor `HostResultsSSE` to use subscription
-3. Implement fallback to polling if subscription fails
-4. Extract polling logic to separate method
+1. Update event types: `CampaignResultEvent`, `TopicCampaign()`
+2. Implement `GET /api/v1/campaigns/{id}/results` SSE endpoint
+3. Modify `DistributedWrite` to publish to campaign topic
+4. Implement fallback polling for graceful degradation
 5. Add integration tests for SSE streaming
 
 **Acceptance Criteria:**
 - SSE receives updates within 100ms of publish
 - Graceful fallback to polling on errors
-- Multiple browsers can subscribe to same host
+- Multiple browsers can subscribe to same campaign
+- Stream closes when campaign completes
 
-### Phase 4: Wiring and Integration
+### Phase 5: UI Integration
 
-**Goal:** Wire everything together, end-to-end testing.
+**Goal:** Build the "Live Query Execution" user experience.
 
 **Tasks:**
-1. Update `router.SetupRoutes` to pass pub/sub
-2. Update `osqueryFeature.SetupProtectedRoutes` signature
-3. Add configuration options for pub/sub
-4. Create end-to-end test scenario
-5. Document configuration in README
+1. Create campaign execution page template
+2. Create campaign results component (Datastar/SSE)
+3. Update query submission UI to show campaign ID
+4. Add campaign history/list view
+5. Update host details page to link to campaigns
 
 **Acceptance Criteria:**
-- Full flow works: submit query → agent returns → browser updates
-- Configuration documented
-- No regressions in existing tests
+- User can submit query and watch results stream in
+- Progress indicator shows hosts responding
+- Can view historical campaigns
 
-### Phase 5: Polish and Monitoring
+### Phase 6: Polish and Monitoring
 
 **Goal:** Production readiness.
 
 **Tasks:**
 1. Add metrics for publish/subscribe operations
-2. Implement message cleanup strategy
+2. Implement message cleanup strategy (completed campaigns)
 3. Add health check for pub/sub system
 4. Load testing with many concurrent subscribers
 5. Update operational documentation
@@ -1075,9 +1343,10 @@ If issues arise:
 
 | Question | Decision | Rationale |
 |----------|----------|-----------|
-| Topic granularity? | Per-host | Matches UI subscription pattern |
+| Topic granularity? | **Per-campaign** (changed from per-host) | Enables dedicated query execution UX, multi-host aggregation, and audit trail |
 | Publish in transaction? | No | Best-effort is fine, results are already saved |
 | Fallback behavior? | Yes, to polling | Graceful degradation is important |
+| Shared vs per-topic tables? | Shared tables | Dynamic topics (`campaign:{uuid}`) would create unbounded tables |
 
 ### 11.2 To Be Decided
 
@@ -1157,45 +1426,67 @@ subscriber, err := sql.NewSubscriber(
 ```
 sequenceDiagram
     participant B as Browser
-    participant H as Handler
+    participant API as API Handler
     participant R as Repository
     participant P as Publisher
     participant DB as PostgreSQL
     participant S as Subscriber
     participant SSE as SSE Handler
+    participant Agent as osquery Agent
 
-    Note over B,SSE: Initial Connection
-    B->>SSE: GET /hosts/:id/results (SSE)
-    SSE->>R: GetRecentResults()
+    Note over B,Agent: 1. Create Campaign
+    B->>API: POST /api/v1/queries/run
+    API->>R: CreateCampaign(query, hosts)
+    R->>DB: INSERT campaigns, campaign_targets
+    DB-->>R: campaign
+    R-->>API: campaign
+    API-->>B: { campaign_id, target_count }
+    
+    Note over B,Agent: 2. Open SSE Stream
+    B->>SSE: GET /campaigns/:id/results (SSE)
+    SSE->>R: GetCampaign(), GetCampaignResults()
     R->>DB: SELECT
-    DB-->>R: results
-    R-->>SSE: results
-    SSE-->>B: SSE: initial data
-    SSE->>S: Subscribe(topic)
+    DB-->>R: campaign, results
+    R-->>SSE: data
+    SSE-->>B: SSE: initial state (0/N hosts)
+    SSE->>S: Subscribe(campaign:{id})
     S->>DB: SELECT (poll for messages)
     
-    Note over B,SSE: osquery Returns Results
-    H->>R: SaveQueryResults()
-    R->>DB: UPDATE distributed_query_targets
-    DB-->>R: ok
-    R-->>H: ok
-    H->>P: Publish(event)
+    Note over B,Agent: 3. Agent Fetches Query
+    Agent->>API: POST /distributed_read
+    API->>R: GetPendingQueries(host)
+    R->>DB: SELECT (campaign-linked queries)
+    DB-->>R: queries
+    R-->>API: queries
+    API-->>Agent: { queries: {...} }
+    
+    Note over B,Agent: 4. Agent Returns Results
+    Agent->>API: POST /distributed_write
+    API->>R: SaveQueryResults()
+    R->>DB: UPDATE campaign_targets
+    DB-->>R: campaign_id
+    R-->>API: ok
+    API->>P: Publish(CampaignResultEvent)
     P->>DB: INSERT watermill_messages
     DB-->>P: ok
-    P-->>H: ok
-    H-->>Agent: 200 OK
+    P-->>API: ok
+    API-->>Agent: 200 OK
     
-    Note over B,SSE: SSE Receives Event
+    Note over B,Agent: 5. SSE Receives Event
     S->>DB: SELECT (poll for messages)
     DB-->>S: new message
     S-->>SSE: message channel
-    SSE->>R: GetRecentResults()
+    SSE->>R: GetCampaign(), GetCampaignResults()
     R->>DB: SELECT
-    DB-->>R: updated results
-    R-->>SSE: results
-    SSE-->>B: SSE: updated data
+    DB-->>R: updated data
+    R-->>SSE: data
+    SSE-->>B: SSE: Host X completed (1/N)
     SSE->>S: Ack(message)
     S->>DB: UPDATE offset
+    
+    Note over B,Agent: 6. Campaign Completes
+    SSE-->>B: SSE: Campaign completed (N/N)
+    SSE->>SSE: Close stream
 ```
 
 ---

@@ -34,7 +34,11 @@ type stubHostRepo struct {
 	ListByOrganizationFunc     func(ctx context.Context, organizationID uuid.UUID) ([]*osqueryServices.Host, error)
 	GetByIDAndOrganizationFunc func(ctx context.Context, id uuid.UUID, organizationID uuid.UUID) (*osqueryServices.Host, error)
 	GetRecentResultsFunc       func(ctx context.Context, hostID uuid.UUID) ([]osqueryServices.QueryResult, error)
-	QueueQueryFunc             func(ctx context.Context, query string, hostIDs []uuid.UUID) (uuid.UUID, error)
+	QueueQueryFunc             func(ctx context.Context, organizationID uuid.UUID, createdBy *int, name *string, description *string, query string, hostIDs []uuid.UUID) (uuid.UUID, error)
+
+	GetCampaignByIDAndOrganizationFunc func(ctx context.Context, campaignID uuid.UUID, organizationID uuid.UUID) (*osqueryServices.Campaign, error)
+	ListCampaignsByOrganizationFunc    func(ctx context.Context, organizationID uuid.UUID, limit int) ([]*osqueryServices.Campaign, error)
+	GetCampaignTargetsFunc             func(ctx context.Context, campaignID uuid.UUID) ([]*osqueryServices.CampaignTarget, error)
 }
 
 func (s *stubHostRepo) Enroll(ctx context.Context, hostIdentifier string, hostDetails json.RawMessage, organizationID uuid.UUID) (string, error) {
@@ -128,11 +132,32 @@ func (s *stubHostRepo) GetRecentResults(ctx context.Context, hostID uuid.UUID) (
 	return s.GetRecentResultsFunc(ctx, hostID)
 }
 
-func (s *stubHostRepo) QueueQuery(ctx context.Context, query string, hostIDs []uuid.UUID) (uuid.UUID, error) {
+func (s *stubHostRepo) QueueQuery(ctx context.Context, organizationID uuid.UUID, createdBy *int, name *string, description *string, query string, hostIDs []uuid.UUID) (uuid.UUID, error) {
 	if s.QueueQueryFunc == nil {
 		return uuid.Nil, nil
 	}
-	return s.QueueQueryFunc(ctx, query, hostIDs)
+	return s.QueueQueryFunc(ctx, organizationID, createdBy, name, description, query, hostIDs)
+}
+
+func (s *stubHostRepo) GetCampaignByIDAndOrganization(ctx context.Context, campaignID uuid.UUID, organizationID uuid.UUID) (*osqueryServices.Campaign, error) {
+	if s.GetCampaignByIDAndOrganizationFunc == nil {
+		return nil, nil
+	}
+	return s.GetCampaignByIDAndOrganizationFunc(ctx, campaignID, organizationID)
+}
+
+func (s *stubHostRepo) ListCampaignsByOrganization(ctx context.Context, organizationID uuid.UUID, limit int) ([]*osqueryServices.Campaign, error) {
+	if s.ListCampaignsByOrganizationFunc == nil {
+		return nil, nil
+	}
+	return s.ListCampaignsByOrganizationFunc(ctx, organizationID, limit)
+}
+
+func (s *stubHostRepo) GetCampaignTargets(ctx context.Context, campaignID uuid.UUID) ([]*osqueryServices.CampaignTarget, error) {
+	if s.GetCampaignTargetsFunc == nil {
+		return nil, nil
+	}
+	return s.GetCampaignTargetsFunc(ctx, campaignID)
 }
 
 type mockPublisher struct {

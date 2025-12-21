@@ -66,34 +66,65 @@ func TestDistributedWrite_PublishesEventOnSuccess(t *testing.T) {
 	calls := append([]publishCall(nil), publisher.publishCalls...)
 	publisher.mu.Unlock()
 
-	if len(calls) != 1 {
-		t.Fatalf("publish calls = %d, want 1", len(calls))
+	if len(calls) != 2 {
+		t.Fatalf("publish calls = %d, want 2", len(calls))
 	}
 
-	wantTopic := pubsub.TopicQueryResults(hostID)
-	if calls[0].topic != wantTopic {
-		t.Fatalf("topic = %q, want %q", calls[0].topic, wantTopic)
+	callsByTopic := map[string]publishCall{}
+	for _, call := range calls {
+		callsByTopic[call.topic] = call
 	}
 
-	if len(calls[0].messages) != 1 {
-		t.Fatalf("published messages = %d, want 1", len(calls[0].messages))
+	wantHostTopic := pubsub.TopicQueryResults(hostID)
+	hostCall, ok := callsByTopic[wantHostTopic]
+	if !ok {
+		t.Fatalf("missing publish call for topic %q", wantHostTopic)
+	}
+	if len(hostCall.messages) != 1 {
+		t.Fatalf("published messages = %d, want 1", len(hostCall.messages))
 	}
 
-	event, err := pubsub.ParseQueryResultEvent(calls[0].messages[0])
+	hostEvent, err := pubsub.ParseQueryResultEvent(hostCall.messages[0])
 	if err != nil {
 		t.Fatalf("ParseQueryResultEvent: %v", err)
 	}
-	if event.HostID != hostID {
-		t.Fatalf("event.HostID = %s, want %s", event.HostID, hostID)
+	if hostEvent.HostID != hostID {
+		t.Fatalf("event.HostID = %s, want %s", hostEvent.HostID, hostID)
 	}
-	if event.QueryID != queryID {
-		t.Fatalf("event.QueryID = %s, want %s", event.QueryID, queryID)
+	if hostEvent.QueryID != queryID {
+		t.Fatalf("event.QueryID = %s, want %s", hostEvent.QueryID, queryID)
 	}
-	if event.Status != pubsub.QueryResultStatusCompleted {
-		t.Fatalf("event.Status = %q, want %q", event.Status, pubsub.QueryResultStatusCompleted)
+	if hostEvent.Status != pubsub.QueryResultStatusCompleted {
+		t.Fatalf("event.Status = %q, want %q", hostEvent.Status, pubsub.QueryResultStatusCompleted)
 	}
-	if time.Since(event.OccurredAt) > time.Minute {
-		t.Fatalf("event.OccurredAt looks too old: %v", event.OccurredAt)
+	if time.Since(hostEvent.OccurredAt) > time.Minute {
+		t.Fatalf("event.OccurredAt looks too old: %v", hostEvent.OccurredAt)
+	}
+
+	wantCampaignTopic := pubsub.TopicCampaign(queryID)
+	campaignCall, ok := callsByTopic[wantCampaignTopic]
+	if !ok {
+		t.Fatalf("missing publish call for topic %q", wantCampaignTopic)
+	}
+	if len(campaignCall.messages) != 1 {
+		t.Fatalf("published messages = %d, want 1", len(campaignCall.messages))
+	}
+
+	campaignEvent, err := pubsub.ParseCampaignResultEvent(campaignCall.messages[0])
+	if err != nil {
+		t.Fatalf("ParseCampaignResultEvent: %v", err)
+	}
+	if campaignEvent.CampaignID != queryID {
+		t.Fatalf("event.CampaignID = %s, want %s", campaignEvent.CampaignID, queryID)
+	}
+	if campaignEvent.HostID != hostID {
+		t.Fatalf("event.HostID = %s, want %s", campaignEvent.HostID, hostID)
+	}
+	if campaignEvent.Status != pubsub.QueryResultStatusCompleted {
+		t.Fatalf("event.Status = %q, want %q", campaignEvent.Status, pubsub.QueryResultStatusCompleted)
+	}
+	if time.Since(campaignEvent.OccurredAt) > time.Minute {
+		t.Fatalf("event.OccurredAt looks too old: %v", campaignEvent.OccurredAt)
 	}
 }
 

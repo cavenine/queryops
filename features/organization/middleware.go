@@ -26,6 +26,10 @@ func GetOrganizationFromContext(ctx context.Context) *services.Organization {
 	return org
 }
 
+func SetOrganizationInContext(ctx context.Context, org *services.Organization) context.Context {
+	return context.WithValue(ctx, organizationContextKey, org)
+}
+
 func GetUserOrganizationsFromContext(ctx context.Context) []*services.Organization {
 	orgs, ok := ctx.Value(userOrgsContextKey).([]*services.Organization)
 	if !ok {

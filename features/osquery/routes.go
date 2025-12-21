@@ -42,4 +42,19 @@ func SetupProtectedRoutes(router chi.Router, pool *pgxpool.Pool, orgService *org
 	router.Get("/hosts/{id}", handlers.HostDetailsPage)
 	router.Get("/hosts/{id}/results", handlers.HostResultsSSE)
 	router.Post("/hosts/{id}/query", handlers.RunQuery)
+
+	// Campaign UI
+	router.Get("/campaigns", handlers.CampaignsPage)
+	router.Get("/campaigns/new", handlers.CampaignNewPage)
+	router.Post("/campaigns/run", handlers.RunCampaign)
+	router.Get("/campaigns/{id}", handlers.CampaignPage)
+	router.Get("/campaigns/{id}/results", handlers.CampaignResultsSSE)
+
+	// Campaign API
+	router.Route("/api/v1", func(r chi.Router) {
+		r.Post("/queries/run", handlers.CreateCampaign)
+		r.Get("/campaigns", handlers.ListCampaigns)
+		r.Get("/campaigns/{id}", handlers.GetCampaign)
+		r.Get("/campaigns/{id}/results", handlers.CampaignResultsSSE)
+	})
 }
