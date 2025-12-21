@@ -1,0 +1,45 @@
+name: Tests
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+  actions: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: 'go.mod' # specific version from your mod file
+          cache: true               # default is true, but explicit is better
+
+      - name: Run unit + integration tests (CTRF)
+        run: go tool task test:all:ctrf
+
+      - name: Publish CTRF report (job summary + sticky PR comment)
+        uses: ctrf-io/github-test-reporter@v1
+        if: always()
+        with:
+          report-path: './ctrf/*.json'
+          summary-report: true
+          failed-report: true
+          slowest-report: true
+          flaky-rate-report: true
+          insights-report: true
+          pull-request: true
+          overwrite-comment: true
+          comment-tag: '${{ github.workflow }}-${{ github.job }}'
+          upload-artifact: true
+          fetch-previous-results: true
+          report-order: 'summary-report,failed-report,flaky-rate-report,slowest-report,insights-report'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

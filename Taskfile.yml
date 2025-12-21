@@ -132,6 +132,58 @@ tasks:
     deps:
       - build
 
+  test:
+    desc: Run Go test suite
+    cmds:
+      - go test ./...
+
+  test:integration:
+    desc: Run Testcontainers integration tests
+    cmds:
+      - go test ./internal/testdb
+
+  test:all:
+    desc: Run unit + integration tests
+    deps:
+      - test
+      - test:integration
+
+  tools:ctrf-reporter:
+    desc: Add/pin CTRF Go test reporter tool
+    cmds:
+      - go get -tool github.com/ctrf-io/go-ctrf-json-reporter/cmd/go-ctrf-json-reporter@v0.0.15
+
+  test:all:ctrf:
+    desc: Run unit + integration tests and emit CTRF reports
+    cmds:
+      - |
+          set -eu
+
+          mkdir -p ctrf
+
+          status_unit=0
+          status_integration=0
+
+          tmp="$(mktemp)"
+          set +e
+          go test -json ./... > "$tmp"
+          status_unit=$?
+          set -e
+          go tool go-ctrf-json-reporter -output ctrf/unit.json < "$tmp"
+          rm -f "$tmp"
+
+          tmp="$(mktemp)"
+          set +e
+          go test -json ./internal/testdb > "$tmp"
+          status_integration=$?
+          set -e
+          go tool go-ctrf-json-reporter -output ctrf/integration.json < "$tmp"
+          rm -f "$tmp"
+
+          if [ "$status_unit" -ne 0 ] || [ "$status_integration" -ne 0 ]; then
+            exit 1
+          fi
+
   migrate:create:
     desc: Create a new timestamped migration
     cmds:

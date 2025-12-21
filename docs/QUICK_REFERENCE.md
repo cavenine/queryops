@@ -385,6 +385,27 @@ go tool task debug      # Delve debugger
 go tool task migrate    # Run DB migrations
 ```
 
+### Tests (unit + integration)
+
+```sh
+# Run the full test suite
+# - Includes container-backed integration tests in internal/testdb
+# - If Docker isn't available, those tests auto-skip
+go test ./...
+
+# Run only the Testcontainers-backed tests
+go test ./internal/testdb
+
+# Optional: speed up local runs by reusing the Postgres container between runs
+# (still creates a fresh per-test DB for isolation)
+QUERYOPS_TESTDB_REUSE=1 go test -parallel 8 ./...
+```
+
+Notes:
+- Integration tests use Testcontainers + `postgres:18.1-bookworm`.
+- Reuse mode keeps a container named `queryops-testdb-postgres`.
+  - Cleanup (if needed): `docker rm -f queryops-testdb-postgres`
+
 ---
 
 ## 11. Key Differences from Alternatives
