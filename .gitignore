@@ -23,3 +23,6 @@ osquery.db/
 server.log
 flagfile.txt
 ctrf/
+
+# bv (beads viewer) local config and caches
+.bv/
