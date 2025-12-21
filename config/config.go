@@ -4,6 +4,7 @@ import (
 	"log/slog"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/joho/godotenv"
 	"github.com/spf13/viper"
@@ -34,6 +35,18 @@ type Config struct {
 	BackgroundProcessing bool `mapstructure:"BACKGROUND_PROCESSING"`
 
 	OsqueryEnrollSecret string `mapstructure:"OSQUERY_ENROLL_SECRET"`
+
+	// PubSubEnabled enables the Watermill pub/sub system for real-time updates.
+	// If false, SSE handlers fall back to polling.
+	PubSubEnabled bool `mapstructure:"PUBSUB_ENABLED"`
+
+	// PubSubPollInterval is how often the subscriber polls for new messages.
+	// Lower values = lower latency, higher DB load.
+	PubSubPollInterval time.Duration `mapstructure:"PUBSUB_POLL_INTERVAL"`
+
+	// PubSubAutoInitSchema enables automatic schema creation.
+	// Set to false in production if using explicit migrations.
+	PubSubAutoInitSchema bool `mapstructure:"PUBSUB_AUTO_INIT_SCHEMA"`
 
 	// WebAuthn configuration for passkey authentication
 	WebAuthnRPID          string `mapstructure:"WEBAUTHN_RP_ID"`           // Domain name (e.g., "localhost" or "example.com")
@@ -66,6 +79,9 @@ func loadBase() *Config {
 	v.SetDefault("AUTO_MIGRATE", true)
 	v.SetDefault("BACKGROUND_PROCESSING", true)
 	v.SetDefault("OSQUERY_ENROLL_SECRET", "enrollment-secret")
+	v.SetDefault("PUBSUB_ENABLED", true)
+	v.SetDefault("PUBSUB_POLL_INTERVAL", 100*time.Millisecond)
+	v.SetDefault("PUBSUB_AUTO_INIT_SCHEMA", false)
 	v.SetDefault("WEBAUTHN_RP_ID", "localhost")
 	v.SetDefault("WEBAUTHN_RP_ORIGIN", "http://localhost:8080")
 	v.SetDefault("WEBAUTHN_RP_DISPLAY_NAME", "QueryOps")

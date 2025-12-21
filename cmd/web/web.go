@@ -12,6 +12,7 @@ import (
 	"github.com/cavenine/queryops/background"
 	"github.com/cavenine/queryops/config"
 	"github.com/cavenine/queryops/db"
+	"github.com/cavenine/queryops/internal/pubsub"
 	"github.com/cavenine/queryops/migrations"
 	"github.com/cavenine/queryops/router"
 
@@ -66,6 +67,24 @@ func run(ctx context.Context) error {
 	}
 	defer pool.Close()
 
+	var ps *pubsub.PubSub
+	if config.Global.PubSubEnabled {
+		ps, err = pubsub.New(egctx, pool, &pubsub.Config{
+			AutoInitializeSchema:   config.Global.PubSubAutoInitSchema,
+			SubscriberPollInterval: config.Global.PubSubPollInterval,
+		})
+		if err != nil {
+			slog.WarnContext(egctx, "pubsub initialization failed; SSE will use polling", "error", err)
+			ps = nil
+		} else {
+			defer func() {
+				if closeErr := ps.Close(); closeErr != nil {
+					slog.WarnContext(egctx, "error closing pubsub", "error", closeErr)
+				}
+			}()
+		}
+	}
+
 	if config.Global.BackgroundProcessing && config.Global.Environment == config.Dev {
 		clientCfg := background.DefaultClientConfig()
 		eg.Go(func() error {
@@ -94,7 +113,7 @@ func run(ctx context.Context) error {
 	sessionManager.Cookie.Secure = config.Global.Environment == config.Prod
 	sessionManager.Cookie.SameSite = http.SameSiteLaxMode
 
-	if setupErr := router.SetupRoutes(egctx, r, sessionManager, pool); setupErr != nil {
+	if setupErr := router.SetupRoutes(egctx, r, sessionManager, pool, ps); setupErr != nil {
 		return fmt.Errorf("error setting up routes: %w", setupErr)
 	}
 

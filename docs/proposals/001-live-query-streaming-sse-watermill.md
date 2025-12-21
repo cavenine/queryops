@@ -176,14 +176,14 @@ Replace the polling mechanism with a PostgreSQL-backed pub/sub system using Wate
 
 ### Why Watermill?
 
-| Criteria | Watermill SQL | River (existing) | Redis Streams | NATS |
-|----------|---------------|------------------|---------------|------|
-| **No new infra** | Yes (Postgres) | Yes (Postgres) | No | No |
-| **Pub/Sub native** | Yes | No (job queue) | Yes | Yes |
-| **pgx support** | Yes (v4+) | N/A | N/A | N/A |
-| **Fan-out pattern** | Yes | No | Yes | Yes |
-| **Transactional publish** | Yes | Yes | No | No |
-| **Complexity** | Low | Medium | Medium | High |
+| Criteria                  | Watermill SQL  | River (existing) | Redis Streams | NATS |
+|---------------------------|----------------|------------------|---------------|------|
+| **No new infra**          | Yes (Postgres) | Yes (Postgres)   | No            | No   |
+| **Pub/Sub native**        | Yes            | No (job queue)   | Yes           | Yes  |
+| **pgx support**           | Yes (v4+)      | N/A              | N/A           | N/A  |
+| **Fan-out pattern**       | Yes            | No               | Yes           | Yes  |
+| **Transactional publish** | Yes            | Yes              | No            | No   |
+| **Complexity**            | Low            | Medium           | Medium        | High |
 
 Watermill is purpose-built for pub/sub patterns and has first-class PostgreSQL support with pgx adapters, making it ideal for this use case.
 

@@ -7,14 +7,16 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync"
 	"testing"
 	"time"
+
+	"github.com/ThreeDotsLabs/watermill/message"
+	"github.com/google/uuid"
 
 	orgServices "github.com/cavenine/queryops/features/organization/services"
 	"github.com/cavenine/queryops/features/osquery"
 	osqueryServices "github.com/cavenine/queryops/features/osquery/services"
-
-	"github.com/google/uuid"
 )
 
 type stubHostRepo struct {
@@ -133,6 +135,29 @@ func (s *stubHostRepo) QueueQuery(ctx context.Context, query string, hostIDs []u
 	return s.QueueQueryFunc(ctx, query, hostIDs)
 }
 
+type mockPublisher struct {
+	mu           sync.Mutex
+	publishErr   error
+	publishCalls []publishCall
+}
+
+type publishCall struct {
+	topic    string
+	messages []*message.Message
+}
+
+func (m *mockPublisher) Publish(topic string, messages ...*message.Message) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	copyMsgs := make([]*message.Message, len(messages))
+	copy(copyMsgs, messages)
+	m.publishCalls = append(m.publishCalls, publishCall{topic: topic, messages: copyMsgs})
+	return m.publishErr
+}
+
+func (m *mockPublisher) Close() error { return nil }
+
 type stubEnrollOrgLookup struct {
 	GetOrganizationByEnrollSecretFunc func(ctx context.Context, secret string) (*orgServices.Organization, error)
 }
@@ -223,7 +248,7 @@ func TestEnroll(t *testing.T) {
 				tt.setup(repo, orgLookup)
 			}
 
-			h := osquery.NewHandlers(repo, orgLookup)
+			h := osquery.NewHandlers(repo, orgLookup, nil, nil)
 
 			rec := httptest.NewRecorder()
 			req := httptest.NewRequest(http.MethodPost, "/osquery/enroll", strings.NewReader(tt.body))
@@ -327,7 +352,7 @@ func TestConfig(t *testing.T) {
 				tt.setup(repo)
 			}
 
-			h := osquery.NewHandlers(repo, &stubEnrollOrgLookup{})
+			h := osquery.NewHandlers(repo, &stubEnrollOrgLookup{}, nil, nil)
 
 			rec := httptest.NewRecorder()
 			req := httptest.NewRequest(http.MethodPost, "/osquery/config", strings.NewReader(tt.body))
@@ -396,7 +421,7 @@ func TestLogger_ResultLogs(t *testing.T) {
 		return nil
 	}
 
-	h := osquery.NewHandlers(repo, &stubEnrollOrgLookup{})
+	h := osquery.NewHandlers(repo, &stubEnrollOrgLookup{}, nil, nil)
 
 	body := `{
 		"node_key":"k1",
@@ -460,7 +485,7 @@ func TestLogger_StatusLogs(t *testing.T) {
 		return nil
 	}
 
-	h := osquery.NewHandlers(repo, &stubEnrollOrgLookup{})
+	h := osquery.NewHandlers(repo, &stubEnrollOrgLookup{}, nil, nil)
 
 	body := `{
 		"node_key":"k1",
@@ -548,7 +573,7 @@ func TestDistributedRead(t *testing.T) {
 				tt.setup(repo)
 			}
 
-			h := osquery.NewHandlers(repo, &stubEnrollOrgLookup{})
+			h := osquery.NewHandlers(repo, &stubEnrollOrgLookup{}, nil, nil)
 
 			rec := httptest.NewRecorder()
 			req := httptest.NewRequest(http.MethodPost, "/osquery/distributed_read", strings.NewReader(tt.body))
@@ -606,7 +631,7 @@ func TestDistributedWrite(t *testing.T) {
 		return nil
 	}
 
-	h := osquery.NewHandlers(repo, &stubEnrollOrgLookup{})
+	h := osquery.NewHandlers(repo, &stubEnrollOrgLookup{}, nil, nil)
 
 	body := `{
 		"node_key":"k1",

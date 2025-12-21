@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/ThreeDotsLabs/watermill/message"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/starfederation/datastar-go/datastar"
@@ -18,6 +19,7 @@ import (
 	orgServices "github.com/cavenine/queryops/features/organization/services"
 	"github.com/cavenine/queryops/features/osquery/pages"
 	"github.com/cavenine/queryops/features/osquery/services"
+	"github.com/cavenine/queryops/internal/pubsub"
 )
 
 type hostRepository interface {
@@ -45,12 +47,23 @@ type enrollmentOrgLookup interface {
 type Handlers struct {
 	repo       hostRepository
 	orgService enrollmentOrgLookup
+	publisher  message.Publisher
+	pubsub     *pubsub.PubSub
 }
 
-func NewHandlers(repo hostRepository, orgService enrollmentOrgLookup) *Handlers {
+// NewHandlers creates a new Handlers instance.
+// publisher and pubsub can be nil for graceful degradation to polling.
+func NewHandlers(
+	repo hostRepository,
+	orgService enrollmentOrgLookup,
+	publisher message.Publisher,
+	ps *pubsub.PubSub,
+) *Handlers {
 	return &Handlers{
 		repo:       repo,
 		orgService: orgService,
+		publisher:  publisher,
+		pubsub:     ps,
 	}
 }
 
@@ -231,7 +244,10 @@ func (h *Handlers) DistributedWrite(w http.ResponseWriter, r *http.Request) {
 			}
 			if err := h.repo.SaveQueryResults(r.Context(), host.ID, queryID, "completed", json.RawMessage(resJSON), nil); err != nil {
 				slog.Error("failed to save query results", "error", err)
+				continue
 			}
+
+			h.publishQueryResultEvent(r.Context(), host.ID, queryID, pubsub.QueryResultStatusCompleted, nil)
 		}
 
 		h.jsonResponse(w, DistributedWriteResponse{})
@@ -269,7 +285,10 @@ func (h *Handlers) DistributedWrite(w http.ResponseWriter, r *http.Request) {
 
 		if err := h.repo.SaveQueryResults(r.Context(), host.ID, queryID, status, resJSON, errorText); err != nil {
 			slog.Error("failed to save query results", "error", err)
+			continue
 		}
+
+		h.publishQueryResultEvent(r.Context(), host.ID, queryID, status, errorText)
 	}
 
 	h.jsonResponse(w, DistributedWriteResponse{})
@@ -358,33 +377,119 @@ func (h *Handlers) HostResultsSSE(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	sse := datastar.NewSSE(w, r)
 
+	results, err := h.repo.GetRecentResults(ctx, hostID)
+	if err != nil {
+		_ = sse.ConsoleError(err)
+		return
+	}
+	if err := sse.PatchElementTempl(pages.HostResultsTable(hostIDStr, results)); err != nil {
+		return
+	}
+
+	if h.pubsub == nil {
+		h.pollResultsLegacy(ctx, sse, hostID, hostIDStr, results)
+		return
+	}
+
+	subscriber, err := h.pubsub.NewSubscriber(ctx)
+	if err != nil {
+		slog.ErrorContext(ctx, "failed to create subscriber; falling back to polling", "error", err)
+		h.pollResultsLegacy(ctx, sse, hostID, hostIDStr, results)
+		return
+	}
+	defer func() {
+		_ = subscriber.Close()
+	}()
+
+	topic := pubsub.TopicQueryResults(hostID)
+	messages, err := subscriber.Subscribe(ctx, topic)
+	if err != nil {
+		slog.ErrorContext(ctx, "failed to subscribe; falling back to polling", "error", err, "topic", topic)
+		h.pollResultsLegacy(ctx, sse, hostID, hostIDStr, results)
+		return
+	}
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case msg := <-messages:
+			if msg == nil {
+				return
+			}
+
+			event, err := pubsub.ParseQueryResultEvent(msg)
+			if err != nil {
+				slog.ErrorContext(ctx, "failed to parse query result event", "error", err)
+				msg.Nack()
+				continue
+			}
+
+			// Topic-scoped, but keep it defensive.
+			if event.HostID != hostID {
+				msg.Ack()
+				continue
+			}
+
+			results, err := h.repo.GetRecentResults(ctx, hostID)
+			if err != nil {
+				slog.ErrorContext(ctx, "failed to get recent results after event", "error", err)
+				msg.Nack()
+				continue
+			}
+
+			if err := sse.PatchElementTempl(pages.HostResultsTable(hostIDStr, results)); err != nil {
+				msg.Nack()
+				return
+			}
+
+			msg.Ack()
+		}
+	}
+}
+
+// pollResultsLegacy implements the fallback polling mechanism for HostResultsSSE.
+// Used when pub/sub is unavailable or subscription fails.
+func (h *Handlers) pollResultsLegacy(
+	ctx context.Context,
+	sse *datastar.ServerSentEventGenerator,
+	hostID uuid.UUID,
+	hostIDStr string,
+	initialResults []services.QueryResult,
+) {
 	ticker := time.NewTicker(time.Second)
 	defer ticker.Stop()
 
-	var last []byte
+	last, err := json.Marshal(initialResults)
+	if err != nil {
+		last = nil
+	}
+
 	for {
-		results, err := h.repo.GetRecentResults(ctx, hostID)
-		if err != nil {
-			_ = sse.ConsoleError(err)
-			return
-		}
-
-		b, err := json.Marshal(results)
-		if err != nil {
-			_ = sse.ConsoleError(err)
-			return
-		}
-		if !bytes.Equal(b, last) {
-			last = b
-			if err := sse.PatchElementTempl(pages.HostResultsTable(hostIDStr, results)); err != nil {
-				return
-			}
-		}
-
 		select {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
+			results, err := h.repo.GetRecentResults(ctx, hostID)
+			if err != nil {
+				_ = sse.ConsoleError(err)
+				return
+			}
+
+			b, err := json.Marshal(results)
+			if err != nil {
+				_ = sse.ConsoleError(err)
+				return
+			}
+
+			if bytes.Equal(b, last) {
+				continue
+			}
+			last = b
+
+			if err := sse.PatchElementTempl(pages.HostResultsTable(hostIDStr, results)); err != nil {
+				return
+			}
 		}
 	}
 }
@@ -444,6 +549,28 @@ func (h *Handlers) RunQuery(w http.ResponseWriter, r *http.Request) {
 	if err := sse.ExecuteScript(fmt.Sprintf("document.querySelector('[data-tui-dialog-close=\"query-dialog-%s\"]').click()", hostIDStr)); err != nil {
 		return
 	}
+}
+
+func (h *Handlers) publishQueryResultEvent(ctx context.Context, hostID uuid.UUID, queryID uuid.UUID, status string, errorText *string) {
+	if h.publisher == nil {
+		return
+	}
+
+	topic := pubsub.TopicQueryResults(hostID)
+	event := pubsub.QueryResultEvent{
+		HostID:     hostID,
+		QueryID:    queryID,
+		Status:     status,
+		OccurredAt: time.Now().UTC(),
+		Error:      errorText,
+	}
+
+	if err := h.publisher.Publish(topic, event.ToMessage()); err != nil {
+		slog.ErrorContext(ctx, "failed to publish query result event", "error", err, "topic", topic, "host_id", hostID, "query_id", queryID)
+		return
+	}
+
+	slog.DebugContext(ctx, "published query result event", "topic", topic, "host_id", hostID, "query_id", queryID, "status", status)
 }
 
 func (h *Handlers) jsonResponse(w http.ResponseWriter, data any) {
