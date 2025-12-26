@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
@@ -57,7 +58,7 @@ func (r *HostRepository) GetCampaignByIDAndOrganization(ctx context.Context, cam
 		&c.ResultCount,
 	)
 	if err != nil {
-		if err == pgx.ErrNoRows {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, nil
 		}
 		return nil, fmt.Errorf("getting campaign: %w", err)

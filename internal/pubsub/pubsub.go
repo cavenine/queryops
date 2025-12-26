@@ -18,6 +18,9 @@ type PubSub struct {
 	publisher *sql.Publisher
 	logger    watermill.LoggerAdapter
 	cfg       *Config
+
+	schemaAdapter  sql.SchemaAdapter
+	offsetsAdapter sql.OffsetsAdapter
 }
 
 // Config holds configuration for the pub/sub system.
@@ -42,8 +45,6 @@ func DefaultConfig() *Config {
 
 // New creates a new PubSub instance.
 func New(ctx context.Context, pool *pgxpool.Pool, cfg *Config) (*PubSub, error) {
-	_ = ctx
-
 	if pool == nil {
 		return nil, fmt.Errorf("pool is nil")
 	}
@@ -51,26 +52,29 @@ func New(ctx context.Context, pool *pgxpool.Pool, cfg *Config) (*PubSub, error) 
 		cfg = DefaultConfig()
 	}
 
-	logger := NewSlogAdapter(slog.Default())
 	beginner := sql.BeginnerFromPgx(pool)
 
+	schemaAdapter := sql.DefaultPostgreSQLSchema{}
+	logAdapter := watermill.NewSlogLogger(slog.Default())
 	publisher, err := sql.NewPublisher(
 		beginner,
 		sql.PublisherConfig{
-			SchemaAdapter:        PostgreSQLSchema{},
+			SchemaAdapter:        schemaAdapter,
 			AutoInitializeSchema: cfg.AutoInitializeSchema,
 		},
-		logger,
+		logAdapter,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("creating publisher: %w", err)
 	}
 
 	return &PubSub{
-		pool:      pool,
-		publisher: publisher,
-		logger:    logger,
-		cfg:       cfg,
+		pool:           pool,
+		publisher:      publisher,
+		logger:         logAdapter,
+		cfg:            cfg,
+		schemaAdapter:  schemaAdapter,
+		offsetsAdapter: sql.DefaultPostgreSQLOffsetsAdapter{},
 	}, nil
 }
 
@@ -102,8 +106,8 @@ func (ps *PubSub) NewSubscriber(ctx context.Context) (*sql.Subscriber, error) {
 			PollInterval:     config.SubscriberPollInterval,
 			ResendInterval:   time.Second,
 			RetryInterval:    time.Second,
-			SchemaAdapter:    PostgreSQLSchema{},
-			OffsetsAdapter:   PostgreSQLOffsetsAdapter{},
+			SchemaAdapter:    ps.schemaAdapter,
+			OffsetsAdapter:   ps.offsetsAdapter,
 			InitializeSchema: config.AutoInitializeSchema,
 		},
 		ps.logger,
