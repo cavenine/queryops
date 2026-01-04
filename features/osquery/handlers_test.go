@@ -7,14 +7,16 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync"
 	"testing"
 	"time"
+
+	"github.com/ThreeDotsLabs/watermill/message"
+	"github.com/google/uuid"
 
 	orgServices "github.com/cavenine/queryops/features/organization/services"
 	"github.com/cavenine/queryops/features/osquery"
 	osqueryServices "github.com/cavenine/queryops/features/osquery/services"
-
-	"github.com/google/uuid"
 )
 
 type stubHostRepo struct {
@@ -32,7 +34,11 @@ type stubHostRepo struct {
 	ListByOrganizationFunc     func(ctx context.Context, organizationID uuid.UUID) ([]*osqueryServices.Host, error)
 	GetByIDAndOrganizationFunc func(ctx context.Context, id uuid.UUID, organizationID uuid.UUID) (*osqueryServices.Host, error)
 	GetRecentResultsFunc       func(ctx context.Context, hostID uuid.UUID) ([]osqueryServices.QueryResult, error)
-	QueueQueryFunc             func(ctx context.Context, query string, hostIDs []uuid.UUID) (uuid.UUID, error)
+	QueueQueryFunc             func(ctx context.Context, organizationID uuid.UUID, createdBy *int, name *string, description *string, query string, hostIDs []uuid.UUID) (uuid.UUID, error)
+
+	GetCampaignByIDAndOrganizationFunc func(ctx context.Context, campaignID uuid.UUID, organizationID uuid.UUID) (*osqueryServices.Campaign, error)
+	ListCampaignsByOrganizationFunc    func(ctx context.Context, organizationID uuid.UUID, limit int) ([]*osqueryServices.Campaign, error)
+	GetCampaignTargetsFunc             func(ctx context.Context, campaignID uuid.UUID) ([]*osqueryServices.CampaignTarget, error)
 }
 
 func (s *stubHostRepo) Enroll(ctx context.Context, hostIdentifier string, hostDetails json.RawMessage, organizationID uuid.UUID) (string, error) {
@@ -126,12 +132,56 @@ func (s *stubHostRepo) GetRecentResults(ctx context.Context, hostID uuid.UUID) (
 	return s.GetRecentResultsFunc(ctx, hostID)
 }
 
-func (s *stubHostRepo) QueueQuery(ctx context.Context, query string, hostIDs []uuid.UUID) (uuid.UUID, error) {
+func (s *stubHostRepo) QueueQuery(ctx context.Context, organizationID uuid.UUID, createdBy *int, name *string, description *string, query string, hostIDs []uuid.UUID) (uuid.UUID, error) {
 	if s.QueueQueryFunc == nil {
 		return uuid.Nil, nil
 	}
-	return s.QueueQueryFunc(ctx, query, hostIDs)
+	return s.QueueQueryFunc(ctx, organizationID, createdBy, name, description, query, hostIDs)
 }
+
+func (s *stubHostRepo) GetCampaignByIDAndOrganization(ctx context.Context, campaignID uuid.UUID, organizationID uuid.UUID) (*osqueryServices.Campaign, error) {
+	if s.GetCampaignByIDAndOrganizationFunc == nil {
+		return nil, nil
+	}
+	return s.GetCampaignByIDAndOrganizationFunc(ctx, campaignID, organizationID)
+}
+
+func (s *stubHostRepo) ListCampaignsByOrganization(ctx context.Context, organizationID uuid.UUID, limit int) ([]*osqueryServices.Campaign, error) {
+	if s.ListCampaignsByOrganizationFunc == nil {
+		return nil, nil
+	}
+	return s.ListCampaignsByOrganizationFunc(ctx, organizationID, limit)
+}
+
+func (s *stubHostRepo) GetCampaignTargets(ctx context.Context, campaignID uuid.UUID) ([]*osqueryServices.CampaignTarget, error) {
+	if s.GetCampaignTargetsFunc == nil {
+		return nil, nil
+	}
+	return s.GetCampaignTargetsFunc(ctx, campaignID)
+}
+
+type mockPublisher struct {
+	mu           sync.Mutex
+	publishErr   error
+	publishCalls []publishCall
+}
+
+type publishCall struct {
+	topic    string
+	messages []*message.Message
+}
+
+func (m *mockPublisher) Publish(topic string, messages ...*message.Message) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	copyMsgs := make([]*message.Message, len(messages))
+	copy(copyMsgs, messages)
+	m.publishCalls = append(m.publishCalls, publishCall{topic: topic, messages: copyMsgs})
+	return m.publishErr
+}
+
+func (m *mockPublisher) Close() error { return nil }
 
 type stubEnrollOrgLookup struct {
 	GetOrganizationByEnrollSecretFunc func(ctx context.Context, secret string) (*orgServices.Organization, error)
@@ -223,7 +273,7 @@ func TestEnroll(t *testing.T) {
 				tt.setup(repo, orgLookup)
 			}
 
-			h := osquery.NewHandlers(repo, orgLookup)
+			h := osquery.NewHandlers(repo, orgLookup, nil, nil)
 
 			rec := httptest.NewRecorder()
 			req := httptest.NewRequest(http.MethodPost, "/osquery/enroll", strings.NewReader(tt.body))
@@ -327,7 +377,7 @@ func TestConfig(t *testing.T) {
 				tt.setup(repo)
 			}
 
-			h := osquery.NewHandlers(repo, &stubEnrollOrgLookup{})
+			h := osquery.NewHandlers(repo, &stubEnrollOrgLookup{}, nil, nil)
 
 			rec := httptest.NewRecorder()
 			req := httptest.NewRequest(http.MethodPost, "/osquery/config", strings.NewReader(tt.body))
@@ -396,7 +446,7 @@ func TestLogger_ResultLogs(t *testing.T) {
 		return nil
 	}
 
-	h := osquery.NewHandlers(repo, &stubEnrollOrgLookup{})
+	h := osquery.NewHandlers(repo, &stubEnrollOrgLookup{}, nil, nil)
 
 	body := `{
 		"node_key":"k1",
@@ -460,7 +510,7 @@ func TestLogger_StatusLogs(t *testing.T) {
 		return nil
 	}
 
-	h := osquery.NewHandlers(repo, &stubEnrollOrgLookup{})
+	h := osquery.NewHandlers(repo, &stubEnrollOrgLookup{}, nil, nil)
 
 	body := `{
 		"node_key":"k1",
@@ -548,7 +598,7 @@ func TestDistributedRead(t *testing.T) {
 				tt.setup(repo)
 			}
 
-			h := osquery.NewHandlers(repo, &stubEnrollOrgLookup{})
+			h := osquery.NewHandlers(repo, &stubEnrollOrgLookup{}, nil, nil)
 
 			rec := httptest.NewRecorder()
 			req := httptest.NewRequest(http.MethodPost, "/osquery/distributed_read", strings.NewReader(tt.body))
@@ -606,7 +656,7 @@ func TestDistributedWrite(t *testing.T) {
 		return nil
 	}
 
-	h := osquery.NewHandlers(repo, &stubEnrollOrgLookup{})
+	h := osquery.NewHandlers(repo, &stubEnrollOrgLookup{}, nil, nil)
 
 	body := `{
 		"node_key":"k1",

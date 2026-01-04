@@ -1,15 +1,23 @@
 package osquery
 
 import (
+	"github.com/ThreeDotsLabs/watermill/message"
 	orgServices "github.com/cavenine/queryops/features/organization/services"
 	"github.com/cavenine/queryops/features/osquery/services"
+	"github.com/cavenine/queryops/internal/pubsub"
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-func SetupRoutes(router chi.Router, pool *pgxpool.Pool, orgService *orgServices.OrganizationService) {
+func SetupRoutes(router chi.Router, pool *pgxpool.Pool, orgService *orgServices.OrganizationService, ps *pubsub.PubSub) {
 	repo := services.NewHostRepository(pool)
-	handlers := NewHandlers(repo, orgService)
+
+	var publisher message.Publisher
+	if ps != nil {
+		publisher = ps.Publisher()
+	}
+
+	handlers := NewHandlers(repo, orgService, publisher, ps)
 
 	router.Route("/osquery", func(r chi.Router) {
 		r.Post("/enroll", handlers.Enroll)
@@ -20,12 +28,33 @@ func SetupRoutes(router chi.Router, pool *pgxpool.Pool, orgService *orgServices.
 	})
 }
 
-func SetupProtectedRoutes(router chi.Router, pool *pgxpool.Pool, orgService *orgServices.OrganizationService) {
+func SetupProtectedRoutes(router chi.Router, pool *pgxpool.Pool, orgService *orgServices.OrganizationService, ps *pubsub.PubSub) {
 	repo := services.NewHostRepository(pool)
-	handlers := NewHandlers(repo, orgService)
+
+	var publisher message.Publisher
+	if ps != nil {
+		publisher = ps.Publisher()
+	}
+
+	handlers := NewHandlers(repo, orgService, publisher, ps)
 
 	router.Get("/hosts", handlers.HostsPage)
 	router.Get("/hosts/{id}", handlers.HostDetailsPage)
 	router.Get("/hosts/{id}/results", handlers.HostResultsSSE)
 	router.Post("/hosts/{id}/query", handlers.RunQuery)
+
+	// Campaign UI
+	router.Get("/campaigns", handlers.CampaignsPage)
+	router.Get("/campaigns/new", handlers.CampaignNewPage)
+	router.Post("/campaigns/run", handlers.RunCampaign)
+	router.Get("/campaigns/{id}", handlers.CampaignPage)
+	router.Get("/campaigns/{id}/results", handlers.CampaignResultsSSE)
+
+	// Campaign API
+	router.Route("/api/v1", func(r chi.Router) {
+		r.Post("/queries/run", handlers.CreateCampaign)
+		r.Get("/campaigns", handlers.ListCampaigns)
+		r.Get("/campaigns/{id}", handlers.GetCampaign)
+		r.Get("/campaigns/{id}/results", handlers.CampaignResultsSSE)
+	})
 }

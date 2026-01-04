@@ -62,7 +62,7 @@ templ Sidebar(page Page, user *services.User, activeOrg *orgServices.Organizatio
 					</a>
 				</li>
 				<li>
-					<a href="#" class={ templ.KV("active", page == PageQueries) }>
+					<a href="/campaigns" class={ templ.KV("active", page == PageQueries) }>
 						@icon.Terminal(icon.Props{Class: "w-5 h-5"})
 						Queries
 					</a>

@@ -258,7 +258,7 @@ func statusBadge(status string) string {
 		return "badge-success"
 	case "pending":
 		return "badge-warning"
-	case "sent":
+	case "sent", "running":
 		return "badge-info"
 	case "failed":
 		return "badge-error"

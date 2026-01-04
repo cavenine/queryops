@@ -35,6 +35,14 @@ type Config struct {
 
 	OsqueryEnrollSecret string `mapstructure:"OSQUERY_ENROLL_SECRET"`
 
+	// PubSubEnabled enables the NATS pub/sub system for real-time updates.
+	// If false, SSE handlers fall back to polling.
+	PubSubEnabled bool `mapstructure:"PUBSUB_ENABLED"`
+
+	// NATSUrl is the URL of an external NATS server (e.g., "nats://localhost:4222").
+	// If empty, an embedded NATS server is started automatically.
+	NATSUrl string `mapstructure:"NATS_URL"`
+
 	// WebAuthn configuration for passkey authentication
 	WebAuthnRPID          string `mapstructure:"WEBAUTHN_RP_ID"`           // Domain name (e.g., "localhost" or "example.com")
 	WebAuthnRPOrigin      string `mapstructure:"WEBAUTHN_RP_ORIGIN"`       // Full origin URL (e.g., "http://localhost:8080")
@@ -66,6 +74,8 @@ func loadBase() *Config {
 	v.SetDefault("AUTO_MIGRATE", true)
 	v.SetDefault("BACKGROUND_PROCESSING", true)
 	v.SetDefault("OSQUERY_ENROLL_SECRET", "enrollment-secret")
+	v.SetDefault("PUBSUB_ENABLED", true)
+	v.SetDefault("NATS_URL", "") // Empty = use embedded NATS server
 	v.SetDefault("WEBAUTHN_RP_ID", "localhost")
 	v.SetDefault("WEBAUTHN_RP_ORIGIN", "http://localhost:8080")
 	v.SetDefault("WEBAUTHN_RP_DISPLAY_NAME", "QueryOps")

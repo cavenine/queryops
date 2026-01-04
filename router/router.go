@@ -17,6 +17,7 @@ import (
 	osqueryFeature "github.com/cavenine/queryops/features/osquery"
 	reverseFeature "github.com/cavenine/queryops/features/reverse"
 	sortableFeature "github.com/cavenine/queryops/features/sortable"
+	"github.com/cavenine/queryops/internal/pubsub"
 	"github.com/cavenine/queryops/web/resources"
 
 	"github.com/alexedwards/scs/v2"
@@ -25,7 +26,7 @@ import (
 	"github.com/starfederation/datastar-go/datastar"
 )
 
-func SetupRoutes(_ context.Context, router chi.Router, sessionManager *scs.SessionManager, pool *pgxpool.Pool) error {
+func SetupRoutes(_ context.Context, router chi.Router, sessionManager *scs.SessionManager, pool *pgxpool.Pool, ps *pubsub.PubSub) error {
 	if config.Global.Environment == config.Dev {
 		setupReload(router)
 	}
@@ -48,7 +49,7 @@ func SetupRoutes(_ context.Context, router chi.Router, sessionManager *scs.Sessi
 	orgService := orgFeature.Service()
 
 	// Osquery endpoints (public)
-	osqueryFeature.SetupRoutes(router, pool, orgService)
+	osqueryFeature.SetupRoutes(router, pool, orgService, ps)
 
 	// Initialize auth feature (creates services once)
 	auth, err := authFeature.NewAuthFeature(sessionManager, pool)
@@ -84,7 +85,7 @@ func SetupRoutes(_ context.Context, router chi.Router, sessionManager *scs.Sessi
 		r.Group(func(r chi.Router) {
 			r.Use(organizationFeature.RequireOrganization(orgService, sessionManager))
 
-			osqueryFeature.SetupProtectedRoutes(r, pool, orgService)
+			osqueryFeature.SetupProtectedRoutes(r, pool, orgService, ps)
 
 			if setupErr = errors.Join(
 				indexFeature.SetupRoutes(r, sessionManager, pool, orgService),

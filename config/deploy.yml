@@ -66,6 +66,10 @@ accessories:
     directories:
       - postgres-data-v18:/var/lib/postgresql
     port: "5432:5432"
+    cmd: "postgres -c shared_buffers=128MB -c effective_cache_size=256MB -c max_connections=20 -c work_mem=2MB -c maintenance_work_mem=32MB -c random_page_cost=1.1 -c hash_mem_multiplier=1.5 -c autovacuum_work_mem=16MB"
+    options:
+      memory: 512m
+      shm-size: 128m
     env:
       clear:
         POSTGRES_USER: queryops
