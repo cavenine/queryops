@@ -1,10 +1,14 @@
 # Proposal 001: Live Query Results Streaming via SSE with Watermill Pub/Sub
 
-**Status:** In Progress (Pivoting to Campaign-Based Design)  
+**Status:** Implemented (NATS Backend)  
 **Author:** AI Assistant  
 **Created:** 2025-12-20  
-**Updated:** 2025-12-20 (Major revision: Pivot from host-based to campaign-based topics)  
+**Updated:** 2026-01-02 (Migrated from PostgreSQL to NATS backend with embedded server option)  
 **Related Issues:** See beads tracking (queryops-xuz epic)
+
+> **Note:** This proposal was originally written for Watermill with PostgreSQL backend.
+> As of 2026-01-02, the implementation uses NATS (with optional embedded server) instead.
+> See the "Implementation Notes" section at the bottom for details on the NATS migration.
 
 ---
 
@@ -1488,6 +1492,47 @@ sequenceDiagram
     SSE-->>B: SSE: Campaign completed (N/N)
     SSE->>SSE: Close stream
 ```
+
+---
+
+## Implementation Notes: NATS Migration (2026-01-02)
+
+The original proposal called for Watermill with PostgreSQL backend. During implementation,
+we pivoted to NATS for the following reasons:
+
+### Why NATS over PostgreSQL?
+
+| Aspect | PostgreSQL (original) | NATS (implemented) |
+|--------|----------------------|-------------------|
+| **Latency** | 0-100ms (poll interval) | <1ms (push-based) |
+| **DB Load** | Constant polling queries | Zero (offloaded to NATS) |
+| **Simplicity** | Custom schema adapter needed | Standard Watermill NATS adapter |
+| **Infrastructure** | Already have PostgreSQL | Embedded server = no new infra |
+
+### Embedded NATS Server
+
+The implementation includes an embedded NATS server that starts automatically when
+`NATS_URL` is not set. This allows the application to run standalone on a single VPS
+without external dependencies.
+
+**Configuration:**
+- `PUBSUB_ENABLED=true` - Enable pub/sub (default)
+- `NATS_URL=""` - Empty = use embedded server (default)
+- `NATS_URL="nats://host:4222"` - Connect to external NATS server
+
+**Key Files:**
+- `internal/pubsub/nats.go` - Embedded server factory
+- `internal/pubsub/pubsub.go` - NATS-backed PubSub implementation
+- `config/config.go` - Configuration
+
+**Removed Files:**
+- `internal/pubsub/schema.go` - PostgreSQL schema adapter (no longer needed)
+- `migrations/sql/20251221022000_watermill_pubsub.{up,down}.sql` - Replaced by drop migration
+
+### Docker Compose
+
+An optional NATS service is stubbed in `docker-compose.yml` (commented out) for
+scenarios where external NATS is preferred (e.g., multi-instance deployments).
 
 ---
 

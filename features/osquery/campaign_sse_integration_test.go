@@ -57,7 +57,7 @@ func TestCampaignResultsSSE_EmitsUpdatesOnPublish(t *testing.T) {
 		t.Fatalf("QueueQuery: %v", err)
 	}
 
-	ps, err := pubsub.New(ctx, tdb.Pool, &pubsub.Config{AutoInitializeSchema: true, SubscriberPollInterval: 50 * time.Millisecond})
+	ps, err := pubsub.New(ctx, nil) // nil config = use embedded NATS
 	if err != nil {
 		t.Fatalf("creating pubsub: %v", err)
 	}

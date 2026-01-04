@@ -6,14 +6,13 @@ import (
 	"time"
 
 	"github.com/ThreeDotsLabs/watermill/message"
-	"github.com/cavenine/queryops/internal/testdb"
 	"github.com/google/uuid"
 )
 
 func TestPubSub_PublishAndSubscribe(t *testing.T) {
-	tdb := testdb.SetupTestDB(t)
+	ctx := context.Background()
 
-	ps, err := New(context.Background(), tdb.Pool, &Config{AutoInitializeSchema: true})
+	ps, err := New(ctx, nil) // nil config = use embedded NATS
 	if err != nil {
 		t.Fatalf("creating pubsub: %v", err)
 	}
@@ -21,7 +20,7 @@ func TestPubSub_PublishAndSubscribe(t *testing.T) {
 		_ = ps.Close()
 	}()
 
-	sub, err := ps.NewSubscriber(context.Background())
+	sub, err := ps.NewSubscriber(ctx)
 	if err != nil {
 		t.Fatalf("creating subscriber: %v", err)
 	}
@@ -29,14 +28,17 @@ func TestPubSub_PublishAndSubscribe(t *testing.T) {
 		_ = sub.Close()
 	}()
 
-	topic := "test-topic-" + uuid.NewString()
-	ctx, cancel := context.WithCancel(context.Background())
+	topic := "test-topic"
+	subCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	messages, err := sub.Subscribe(ctx, topic)
+	messages, err := sub.Subscribe(subCtx, topic)
 	if err != nil {
 		t.Fatalf("subscribing: %v", err)
 	}
+
+	// Give subscriber time to be ready
+	time.Sleep(50 * time.Millisecond)
 
 	event := QueryResultEvent{
 		HostID:     uuid.New(),
@@ -71,9 +73,9 @@ func TestPubSub_PublishAndSubscribe(t *testing.T) {
 }
 
 func TestPubSub_MultipleSubscribers(t *testing.T) {
-	tdb := testdb.SetupTestDB(t)
+	ctx := context.Background()
 
-	ps, err := New(context.Background(), tdb.Pool, &Config{AutoInitializeSchema: true})
+	ps, err := New(ctx, nil)
 	if err != nil {
 		t.Fatalf("creating pubsub: %v", err)
 	}
@@ -81,16 +83,16 @@ func TestPubSub_MultipleSubscribers(t *testing.T) {
 		_ = ps.Close()
 	}()
 
-	topic := "test-topic-" + uuid.NewString()
-	ctx, cancel := context.WithCancel(context.Background())
+	topic := "test-topic"
+	subCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
 	makeSubscriber := func() (<-chan *message.Message, func(), error) {
-		sub, err := ps.NewSubscriber(context.Background())
+		sub, err := ps.NewSubscriber(ctx)
 		if err != nil {
 			return nil, nil, err
 		}
-		msgs, err := sub.Subscribe(ctx, topic)
+		msgs, err := sub.Subscribe(subCtx, topic)
 		if err != nil {
 			_ = sub.Close()
 			return nil, nil, err
@@ -116,6 +118,9 @@ func TestPubSub_MultipleSubscribers(t *testing.T) {
 		t.Fatalf("subscriber3: %v", err)
 	}
 	defer cleanup3()
+
+	// Give subscribers time to be ready
+	time.Sleep(50 * time.Millisecond)
 
 	event := QueryResultEvent{
 		HostID:     uuid.New(),
@@ -146,9 +151,9 @@ func TestPubSub_MultipleSubscribers(t *testing.T) {
 }
 
 func TestPubSub_TopicIsolation(t *testing.T) {
-	tdb := testdb.SetupTestDB(t)
+	ctx := context.Background()
 
-	ps, err := New(context.Background(), tdb.Pool, &Config{AutoInitializeSchema: true})
+	ps, err := New(ctx, nil)
 	if err != nil {
 		t.Fatalf("creating pubsub: %v", err)
 	}
@@ -156,7 +161,7 @@ func TestPubSub_TopicIsolation(t *testing.T) {
 		_ = ps.Close()
 	}()
 
-	sub, err := ps.NewSubscriber(context.Background())
+	sub, err := ps.NewSubscriber(ctx)
 	if err != nil {
 		t.Fatalf("creating subscriber: %v", err)
 	}
@@ -164,16 +169,19 @@ func TestPubSub_TopicIsolation(t *testing.T) {
 		_ = sub.Close()
 	}()
 
-	topicA := "test-topic-a-" + uuid.NewString()
-	topicB := "test-topic-b-" + uuid.NewString()
+	topicA := "test-topic-a"
+	topicB := "test-topic-b"
 
-	ctx, cancel := context.WithCancel(context.Background())
+	subCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	messagesA, err := sub.Subscribe(ctx, topicA)
+	messagesA, err := sub.Subscribe(subCtx, topicA)
 	if err != nil {
 		t.Fatalf("subscribing topicA: %v", err)
 	}
+
+	// Give subscriber time to be ready
+	time.Sleep(50 * time.Millisecond)
 
 	event := QueryResultEvent{
 		HostID:     uuid.New(),
@@ -182,6 +190,7 @@ func TestPubSub_TopicIsolation(t *testing.T) {
 		OccurredAt: time.Now().UTC().Truncate(time.Second),
 	}
 
+	// Publish to topicB, should NOT be received on topicA
 	if err := ps.Publisher().Publish(topicB, event.ToMessage()); err != nil {
 		t.Fatalf("publishing topicB: %v", err)
 	}
@@ -192,7 +201,7 @@ func TestPubSub_TopicIsolation(t *testing.T) {
 			msg.Ack()
 		}
 		t.Fatalf("unexpected message received on topicA")
-	case <-time.After(500 * time.Millisecond):
-		// ok
+	case <-time.After(200 * time.Millisecond):
+		// ok - no message received, which is expected
 	}
 }

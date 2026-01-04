@@ -12,7 +12,7 @@ require (
 	github.com/Jeffail/gabs/v2 v2.7.0
 	github.com/Oudwins/tailwind-merge-go v0.2.0
 	github.com/ThreeDotsLabs/watermill v1.5.0
-	github.com/ThreeDotsLabs/watermill-sql/v4 v4.1.2
+	github.com/ThreeDotsLabs/watermill-nats/v2 v2.1.3
 	github.com/a-h/templ v0.3.960
 	github.com/alexedwards/scs/pgxstore v0.0.0-20251002162104-209de6e426de
 	github.com/alexedwards/scs/v2 v2.9.0
@@ -25,6 +25,8 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.7.6
 	github.com/joho/godotenv v1.5.1
+	github.com/nats-io/nats-server/v2 v2.12.3
+	github.com/nats-io/nats.go v1.48.0
 	github.com/riverqueue/river/riverdriver/riverpgxv5 v0.28.0
 	github.com/samber/lo v1.52.0
 	github.com/shirou/gopsutil/v4 v4.25.11
@@ -73,6 +75,7 @@ require (
 	github.com/air-verse/air v1.63.0 // indirect
 	github.com/alecthomas/chroma/v2 v2.20.0 // indirect
 	github.com/andybalholm/brotli v1.2.0 // indirect
+	github.com/antithesishq/antithesis-sdk-go v0.5.0 // indirect
 	github.com/apache/arrow/go/v10 v10.0.1 // indirect
 	github.com/apache/thrift v0.16.0 // indirect
 	github.com/aws/aws-sdk-go v1.55.7 // indirect
@@ -92,7 +95,6 @@ require (
 	github.com/bep/godartsass/v2 v2.5.0 // indirect
 	github.com/bep/golibsass v1.2.0 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
-	github.com/cenkalti/backoff/v5 v5.0.2 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/chainguard-dev/git-urls v1.0.2 // indirect
 	github.com/chewxy/math32 v1.11.1 // indirect
@@ -207,6 +209,7 @@ require (
 	github.com/microsoft/go-mssqldb v1.0.0 // indirect
 	github.com/minio/asm2plan9s v0.0.0-20200509001527-cdd76441f9d8 // indirect
 	github.com/minio/c2goasm v0.0.0-20190812172519-36a3d3bbc4f3 // indirect
+	github.com/minio/highwayhash v1.0.4-0.20251030100505-070ab1a87a76 // indirect
 	github.com/mitchellh/hashstructure/v2 v2.0.2 // indirect
 	github.com/mitchellh/mapstructure v1.5.1-0.20231216201459-8508981c8b6c // indirect
 	github.com/moby/docker-image-spec v1.3.1 // indirect
@@ -221,6 +224,9 @@ require (
 	github.com/mutecomm/go-sqlcipher/v4 v4.4.0 // indirect
 	github.com/nakagami/firebirdsql v0.0.0-20190310045651-3c02a58cfed8 // indirect
 	github.com/natefinch/atomic v1.0.1 // indirect
+	github.com/nats-io/jwt/v2 v2.8.0 // indirect
+	github.com/nats-io/nkeys v0.4.12 // indirect
+	github.com/nats-io/nuid v1.0.1 // indirect
 	github.com/ncruces/go-strftime v1.0.0 // indirect
 	github.com/neo4j/neo4j-go-driver v1.8.1-0.20200803113522-b626aa943eba // indirect
 	github.com/nxadm/tail v1.4.11 // indirect
@@ -252,7 +258,6 @@ require (
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/skeema/knownhosts v1.3.1 // indirect
 	github.com/snowflakedb/gosnowflake v1.6.19 // indirect
-	github.com/sony/gobreaker v1.0.0 // indirect
 	github.com/spf13/afero v1.15.0 // indirect
 	github.com/spf13/cast v1.10.0 // indirect
 	github.com/spf13/pflag v1.0.10 // indirect

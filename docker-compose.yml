@@ -12,5 +12,15 @@ services:
     volumes:
       - queryops-postgres-data:/var/lib/postgresql
 
+  # Uncomment to use external NATS instead of embedded server.
+  # Set NATS_URL=nats://localhost:4222 in your environment.
+  # nats:
+  #   image: nats:latest
+  #   container_name: queryops-nats
+  #   restart: unless-stopped
+  #   ports:
+  #     - "4222:4222"
+  #   command: ["--name", "queryops-nats"]
+
 volumes:
   queryops-postgres-data:

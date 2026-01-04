@@ -4,125 +4,126 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"time"
 
 	"github.com/ThreeDotsLabs/watermill"
-	"github.com/ThreeDotsLabs/watermill-sql/v4/pkg/sql"
-	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/ThreeDotsLabs/watermill/message"
+	nc "github.com/nats-io/nats.go"
+
+	wmnats "github.com/ThreeDotsLabs/watermill-nats/v2/pkg/nats"
 )
 
-// PubSub wraps Watermill SQL publisher and subscriber.
+// PubSub provides publish/subscribe messaging backed by NATS.
+//
+// If no NATS URL is provided, an embedded NATS server is started automatically.
+// This allows the application to run standalone on a single VPS without external
+// dependencies, while still supporting external NATS for scaled deployments.
 type PubSub struct {
-	pool      *pgxpool.Pool
-	publisher *sql.Publisher
+	conn      *nc.Conn
+	embedded  *EmbeddedServer // nil if using external NATS
+	publisher message.Publisher
 	logger    watermill.LoggerAdapter
-	cfg       *Config
-
-	schemaAdapter  sql.SchemaAdapter
-	offsetsAdapter sql.OffsetsAdapter
 }
 
 // Config holds configuration for the pub/sub system.
 type Config struct {
-	// AutoInitializeSchema creates Watermill tables if they don't exist.
-	//
-	// In production, prefer setting this to false and using explicit migrations.
-	AutoInitializeSchema bool
-
-	// SubscriberPollInterval is the interval to wait between subsequent SELECT
-	// queries if no messages are found.
-	SubscriberPollInterval time.Duration
+	// NATSUrl is the URL of the NATS server to connect to.
+	// If empty, an embedded NATS server will be started.
+	NATSUrl string
 }
 
-// DefaultConfig returns sensible defaults for development.
-func DefaultConfig() *Config {
-	return &Config{
-		AutoInitializeSchema:   true,
-		SubscriberPollInterval: 100 * time.Millisecond,
-	}
-}
-
-// New creates a new PubSub instance.
-func New(ctx context.Context, pool *pgxpool.Pool, cfg *Config) (*PubSub, error) {
-	if pool == nil {
-		return nil, fmt.Errorf("pool is nil")
-	}
+// New creates a new PubSub instance backed by NATS.
+//
+// If cfg.NATSUrl is empty, starts an embedded NATS server.
+// Otherwise, connects to the external NATS server at the provided URL.
+func New(ctx context.Context, cfg *Config) (*PubSub, error) {
 	if cfg == nil {
-		cfg = DefaultConfig()
+		cfg = &Config{}
 	}
 
-	beginner := sql.BeginnerFromPgx(pool)
-
-	schemaAdapter := sql.DefaultPostgreSQLSchema{}
-	logAdapter := watermill.NewSlogLogger(slog.Default())
-	publisher, err := sql.NewPublisher(
-		beginner,
-		sql.PublisherConfig{
-			SchemaAdapter:        schemaAdapter,
-			AutoInitializeSchema: cfg.AutoInitializeSchema,
-		},
-		logAdapter,
-	)
+	conn, embedded, err := Connect(ctx, cfg.NATSUrl)
 	if err != nil {
-		return nil, fmt.Errorf("creating publisher: %w", err)
+		return nil, fmt.Errorf("connecting to NATS: %w", err)
+	}
+
+	logger := watermill.NewSlogLogger(slog.Default())
+
+	// Create publisher using existing connection
+	// JetStream is disabled for core NATS pub/sub
+	pubConfig := wmnats.PublisherPublishConfig{
+		Marshaler:         &wmnats.NATSMarshaler{},
+		SubjectCalculator: wmnats.DefaultSubjectCalculator,
+		JetStream:         wmnats.JetStreamConfig{Disabled: true},
+	}
+
+	publisher, err := wmnats.NewPublisherWithNatsConn(conn, pubConfig, logger)
+	if err != nil {
+		if embedded != nil {
+			embedded.Shutdown()
+		}
+		conn.Close()
+		return nil, fmt.Errorf("creating NATS publisher: %w", err)
 	}
 
 	return &PubSub{
-		pool:           pool,
-		publisher:      publisher,
-		logger:         logAdapter,
-		cfg:            cfg,
-		schemaAdapter:  schemaAdapter,
-		offsetsAdapter: sql.DefaultPostgreSQLOffsetsAdapter{},
+		conn:      conn,
+		embedded:  embedded,
+		publisher: publisher,
+		logger:    logger,
 	}, nil
 }
 
 // Publisher returns the Watermill publisher for sending messages.
-func (ps *PubSub) Publisher() *sql.Publisher {
+func (ps *PubSub) Publisher() message.Publisher {
 	return ps.publisher
 }
 
 // NewSubscriber creates a new subscriber for consuming messages.
-// Each SSE connection should create its own subscriber.
-func (ps *PubSub) NewSubscriber(ctx context.Context) (*sql.Subscriber, error) {
-	_ = ctx
-
-	if ps.pool == nil {
-		return nil, fmt.Errorf("pool is nil")
+//
+// Each SSE connection should create its own subscriber to receive all messages
+// (fan-out pattern). Subscribers are ephemeral and should be closed when the
+// SSE connection ends.
+func (ps *PubSub) NewSubscriber(_ context.Context) (message.Subscriber, error) {
+	// Create subscriber using existing connection
+	// JetStream is disabled for core NATS pub/sub
+	// No QueueGroupPrefix means each subscriber gets all messages (fan-out)
+	subConfig := wmnats.SubscriberSubscriptionConfig{
+		Unmarshaler:       &wmnats.NATSMarshaler{},
+		SubjectCalculator: wmnats.DefaultSubjectCalculator,
+		JetStream:         wmnats.JetStreamConfig{Disabled: true},
+		// Empty QueueGroupPrefix = no queue group = fan-out to all subscribers
+		QueueGroupPrefix: "",
 	}
 
-	beginner := sql.BeginnerFromPgx(ps.pool)
-
-	config := ps.cfg
-	if config == nil {
-		config = DefaultConfig()
-	}
-
-	subscriber, err := sql.NewSubscriber(
-		beginner,
-		sql.SubscriberConfig{
-			ConsumerGroup:    uuid.NewString(),
-			PollInterval:     config.SubscriberPollInterval,
-			ResendInterval:   time.Second,
-			RetryInterval:    time.Second,
-			SchemaAdapter:    ps.schemaAdapter,
-			OffsetsAdapter:   ps.offsetsAdapter,
-			InitializeSchema: config.AutoInitializeSchema,
-		},
-		ps.logger,
-	)
+	subscriber, err := wmnats.NewSubscriberWithNatsConn(ps.conn, subConfig, ps.logger)
 	if err != nil {
-		return nil, fmt.Errorf("creating subscriber: %w", err)
+		return nil, fmt.Errorf("creating NATS subscriber: %w", err)
 	}
 
 	return subscriber, nil
 }
 
 // Close shuts down the pub/sub system.
+//
+// Closes the publisher, NATS connection, and embedded server (if running).
 func (ps *PubSub) Close() error {
-	if ps.publisher == nil {
-		return nil
+	var errs []error
+
+	if ps.publisher != nil {
+		if err := ps.publisher.Close(); err != nil {
+			errs = append(errs, fmt.Errorf("closing publisher: %w", err))
+		}
 	}
-	return ps.publisher.Close()
+
+	if ps.conn != nil {
+		ps.conn.Close()
+	}
+
+	if ps.embedded != nil {
+		ps.embedded.Shutdown()
+	}
+
+	if len(errs) > 0 {
+		return errs[0]
+	}
+	return nil
 }

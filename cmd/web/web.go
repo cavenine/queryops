@@ -69,9 +69,8 @@ func run(ctx context.Context) error {
 
 	var ps *pubsub.PubSub
 	if config.Global.PubSubEnabled {
-		ps, err = pubsub.New(egctx, pool, &pubsub.Config{
-			AutoInitializeSchema:   config.Global.PubSubAutoInitSchema,
-			SubscriberPollInterval: config.Global.PubSubPollInterval,
+		ps, err = pubsub.New(egctx, &pubsub.Config{
+			NATSUrl: config.Global.NATSUrl,
 		})
 		if err != nil {
 			slog.WarnContext(egctx, "pubsub initialization failed; SSE will use polling", "error", err)
