@@ -11,7 +11,7 @@ require (
 require (
 	github.com/Jeffail/gabs/v2 v2.7.0
 	github.com/Oudwins/tailwind-merge-go v0.2.1
-	github.com/ThreeDotsLabs/watermill v1.5.1	
+	github.com/ThreeDotsLabs/watermill v1.5.1
 	github.com/ThreeDotsLabs/watermill-nats/v2 v2.1.3
 	github.com/a-h/templ v0.3.977
 	github.com/alexedwards/scs/pgxstore v0.0.0-20251002162104-209de6e426de
@@ -295,7 +295,6 @@ require (
 	go.opentelemetry.io/otel/sdk/metric v1.39.0 // indirect
 	go.opentelemetry.io/otel/trace v1.39.0 // indirect
 	go.starlark.net v0.0.0-20231101134539-556fd59b42f6 // indirect
-	go.uber.org/automaxprocs v1.6.0 // indirect
 	go.uber.org/goleak v1.3.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/arch v0.11.0 // indirect

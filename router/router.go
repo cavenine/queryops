@@ -27,7 +27,6 @@ import (
 )
 
 func SetupRoutes(_ context.Context, router chi.Router, sessionManager *scs.SessionManager, pool *pgxpool.Pool, ps *pubsub.PubSub) error {
-	_ = ps
 	if config.Global.Environment == config.Dev {
 		setupReload(router)
 	}
