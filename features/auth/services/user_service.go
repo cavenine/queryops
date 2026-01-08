@@ -8,13 +8,20 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+type userRepository interface {
+	EmailExists(ctx context.Context, email string) (bool, error)
+	Create(ctx context.Context, email, passwordHash string) (*User, error)
+	GetByEmail(ctx context.Context, email string) (*User, error)
+	GetByID(ctx context.Context, id int) (*User, error)
+}
+
 // UserService handles user authentication and account operations.
 type UserService struct {
-	repo *UserRepository
+	repo userRepository
 }
 
 // NewUserService creates a new UserService.
-func NewUserService(repo *UserRepository) *UserService {
+func NewUserService(repo userRepository) *UserService {
 	return &UserService{repo: repo}
 }
 

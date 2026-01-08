@@ -5,15 +5,25 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
-	"github.com/google/uuid"
 	"strings"
+
+	"github.com/google/uuid"
 )
 
-type OrganizationService struct {
-	repo *OrganizationRepository
+type organizationRepository interface {
+	Create(ctx context.Context, name string, ownerID int) (*Organization, error)
+	AddEnrollSecret(ctx context.Context, orgID uuid.UUID, secret string) error
+	GetByID(ctx context.Context, id uuid.UUID) (*Organization, error)
+	GetUserOrganizations(ctx context.Context, userID int) ([]*Organization, error)
+	GetActiveEnrollSecret(ctx context.Context, orgID uuid.UUID) (*OrganizationEnrollSecret, error)
+	GetOrganizationByEnrollSecret(ctx context.Context, secret string) (*Organization, error)
 }
 
-func NewOrganizationService(repo *OrganizationRepository) *OrganizationService {
+type OrganizationService struct {
+	repo organizationRepository
+}
+
+func NewOrganizationService(repo organizationRepository) *OrganizationService {
 	return &OrganizationService{repo: repo}
 }
 
