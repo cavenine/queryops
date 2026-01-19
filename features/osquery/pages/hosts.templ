@@ -9,6 +9,7 @@ import (
 	"github.com/cavenine/queryops/features/common/components/button"
 	"github.com/cavenine/queryops/features/common/components/dialog"
 	"github.com/cavenine/queryops/features/common/components/icon"
+	"github.com/cavenine/queryops/features/common/components/stats"
 	"github.com/cavenine/queryops/features/common/layouts"
 	"github.com/cavenine/queryops/features/organization"
 	"github.com/cavenine/queryops/features/osquery/services"
@@ -32,8 +33,32 @@ templ HostsPage(title string, hosts []*services.Host) {
 				</div>
 			</div>
 
-			<!-- Hosts Table -->
-			<div class="overflow-x-auto bg-base-100 rounded-lg shadow-sm border border-base-300">
+		@stats.Stats() {
+			@stats.Stat() {
+				@stats.Title() { Total Hosts (placeholder) }
+				@stats.Value() { 128 }
+				@stats.Description() { Enrolled devices (placeholder) }
+			}
+			@stats.Stat() {
+				@stats.Title() { Online (placeholder) }
+				@stats.Value() { 94 }
+				@stats.Description() { Seen in last 5 min (placeholder) }
+			}
+			@stats.Stat() {
+				@stats.Title() { Offline (placeholder) }
+				@stats.Value() { 34 }
+				@stats.Description() { No recent check-in (placeholder) }
+			}
+			@stats.Stat() {
+				@stats.Title() { Last Seen (placeholder) }
+				@stats.Value() { 2m }
+				@stats.Description() { Most recent host (placeholder) }
+			}
+		}
+
+		<!-- Hosts Table -->
+		<div class="overflow-x-auto bg-base-100 rounded-lg shadow-sm border border-base-300">
+
 				<table class="table table-zebra w-full">
 					<thead>
 						<tr>

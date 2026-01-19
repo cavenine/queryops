@@ -1,0 +1,113 @@
+package stats
+
+import "github.com/cavenine/queryops/utils"
+
+type Props struct {
+	ID         string
+	Class      string
+	Attributes templ.Attributes
+}
+
+type StatProps struct {
+	ID         string
+	Class      string
+	Attributes templ.Attributes
+}
+
+type TitleProps struct {
+	ID         string
+	Class      string
+	Attributes templ.Attributes
+}
+
+type ValueProps struct {
+	ID         string
+	Class      string
+	Attributes templ.Attributes
+}
+
+type DescriptionProps struct {
+	ID         string
+	Class      string
+	Attributes templ.Attributes
+}
+
+templ Stats(props ...Props) {
+	{{ var p Props }}
+	if len(props) > 0 {
+		{{ p = props[0] }}
+	}
+	<div
+		if p.ID != "" {
+			id={ p.ID }
+		}
+		class={ utils.TwMerge("stats shadow bg-base-100 border border-base-200 w-full", p.Class) }
+		{ p.Attributes... }
+	>
+		{ children... }
+	</div>
+}
+
+templ Stat(props ...StatProps) {
+	{{ var p StatProps }}
+	if len(props) > 0 {
+		{{ p = props[0] }}
+	}
+	<div
+		if p.ID != "" {
+			id={ p.ID }
+		}
+		class={ utils.TwMerge("stat", p.Class) }
+		{ p.Attributes... }
+	>
+		{ children... }
+	</div>
+}
+
+templ Title(props ...TitleProps) {
+	{{ var p TitleProps }}
+	if len(props) > 0 {
+		{{ p = props[0] }}
+	}
+	<div
+		if p.ID != "" {
+			id={ p.ID }
+		}
+		class={ utils.TwMerge("stat-title text-xs font-semibold uppercase opacity-60", p.Class) }
+		{ p.Attributes... }
+	>
+		{ children... }
+	</div>
+}
+
+templ Value(props ...ValueProps) {
+	{{ var p ValueProps }}
+	if len(props) > 0 {
+		{{ p = props[0] }}
+	}
+	<div
+		if p.ID != "" {
+			id={ p.ID }
+		}
+		class={ utils.TwMerge("stat-value text-primary text-2xl font-bold", p.Class) }
+		{ p.Attributes... }
+	>
+		{ children... }
+	</div>
+}
+
+templ Description(props ...DescriptionProps) {
+	{{ var p DescriptionProps }}
+	if len(props) > 0 {
+		{{ p = props[0] }}
+	}
+	<div
+		if p.ID != "" {
+			id={ p.ID }
+		}
+		class={ utils.TwMerge("stat-desc text-xs opacity-50", p.Class) }
+		{ p.Attributes... }
+	>
+		{ children... }
+	</div>
+}

@@ -1,6 +1,8 @@
 package pages
 
 import (
+	"fmt"
+
 	"github.com/starfederation/datastar-go/datastar"
 
 	"github.com/cavenine/queryops/features/auth"
@@ -21,6 +23,21 @@ templ IndexPage(title string, org *services.Organization, enrollSecret string, u
 		ActiveOrg: org,
 		UserOrgs:  userOrgs,
 	}) {
+		{{
+			var enrollEnvName string
+			var enrollFileName string
+			var enrollEnvCommand string
+			var flagfileContent string
+			var flagfileCommand string
+			if org != nil {
+				tlsHostname := "app.queryops.com"
+				enrollEnvName = "QUERYOPS_ENROLL_SECRET"
+				enrollFileName = fmt.Sprintf("osquery-%s.flags", org.ID.String())
+				enrollEnvCommand = fmt.Sprintf("%s=\"%s\" osqueryd \\\n  --tls_hostname=%s \\\n  --host_identifier=uuid \\\n  --enroll_secret_env=%s \\\n  --enroll_always \\\n  --enroll_tls_endpoint=/osquery/enroll \\\n  --config_plugin=tls \\\n  --config_tls_endpoint=/osquery/config \\\n  --config_refresh=10 \\\n  --logger_plugin=tls \\\n  --logger_tls_endpoint=/osquery/logger \\\n  --logger_tls_period=10 \\\n  --disable_distributed=false \\\n  --distributed_plugin=tls \\\n  --distributed_interval=10 \\\n  --distributed_tls_read_endpoint=/osquery/distributed_read \\\n  --distributed_tls_write_endpoint=/osquery/distributed_write \\\n  --pidfile=osquery.pid \\\n  --database_path=osquery.db \\\n  --verbose", enrollEnvName, enrollSecret, tlsHostname, enrollEnvName)
+				flagfileContent = fmt.Sprintf("tls_hostname=%s\nhost_identifier=uuid\nenroll_secret_env=%s\nenroll_always=true\nenroll_tls_endpoint=/osquery/enroll\nconfig_plugin=tls\nconfig_tls_endpoint=/osquery/config\nconfig_refresh=10\nlogger_plugin=tls\nlogger_tls_endpoint=/osquery/logger\nlogger_tls_period=10\ndisable_distributed=false\ndistributed_plugin=tls\ndistributed_interval=10\ndistributed_tls_read_endpoint=/osquery/distributed_read\ndistributed_tls_write_endpoint=/osquery/distributed_write\npidfile=osquery.pid\ndatabase_path=osquery.db\nverbose=true\n", tlsHostname, enrollEnvName)
+				flagfileCommand = fmt.Sprintf("osqueryd --flagfile=%s", enrollFileName)
+			}
+		}}
 		<div class="flex flex-col gap-6">
 			<!-- Header Section -->
 			<div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -81,6 +98,64 @@ templ IndexPage(title string, org *services.Organization, enrollSecret string, u
 						</div>
 					}
 				}
+
+				<details class="collapse bg-base-100 border border-base-200 shadow-sm">
+					<summary class="collapse-title text-sm font-semibold">Osquery enrollment commands</summary>
+					<div class="collapse-content">
+						<div class="flex flex-col gap-4">
+							<div class="flex items-center justify-between">
+								<div>
+									<h4 class="text-sm font-semibold">One-line env command</h4>
+									<p class="text-xs text-base-content/60">Stores the secret in an environment variable and uses --enroll_secret_env.</p>
+								</div>
+								<button class="btn btn-ghost btn-sm" onclick="navigator.clipboard.writeText(document.getElementById('osquery-enroll-env-command').innerText)">
+									@icon.Copy(icon.Props{Class: "w-4 h-4"})
+								</button>
+							</div>
+							<pre class="bg-base-200 px-3 py-3 rounded font-mono text-xs whitespace-pre-wrap select-all overflow-x-auto"><code id="osquery-enroll-env-command">{ enrollEnvCommand }</code></pre>
+							<p class="text-xs text-base-content/60">Uses placeholder TLS hostname until we wire a real value.</p>
+							<div class="flex items-center justify-between">
+								<div>
+									<h4 class="text-sm font-semibold">Download flags file</h4>
+									<p class="text-xs text-base-content/60">Copy/save the flagfile content and run osqueryd with --flagfile.</p>
+								</div>
+								<div class="flex gap-2">
+									<button
+										class="btn btn-outline btn-sm"
+										onclick="downloadFlagfile(document.getElementById('osquery-flagfile-content').innerText, this.dataset.filename)"
+										data-filename={ enrollFileName }
+									>
+										@icon.Download(icon.Props{Class: "w-4 h-4"})
+										Download
+									</button>
+									<button class="btn btn-ghost btn-sm" onclick="navigator.clipboard.writeText(document.getElementById('osquery-flagfile-content').innerText)">
+										@icon.Copy(icon.Props{Class: "w-4 h-4"})
+									</button>
+								</div>
+							</div>
+							<div class="flex flex-col gap-2">
+								<code class="bg-base-200 px-3 py-2 rounded font-mono text-xs select-all">{ flagfileCommand }</code>
+								<p class="text-xs text-base-content/60">Flagfile content uses the same placeholder hostname for now.</p>
+							</div>
+							<div class="flex flex-col gap-2">
+								<code id="osquery-flagfile-content" class="bg-base-200 px-3 py-3 rounded font-mono text-xs whitespace-pre-wrap select-all">{ flagfileContent }</code>
+								<p class="text-xs text-base-content/60">Save as { enrollFileName } before running.</p>
+							</div>
+						</div>
+					</div>
+				</details>
+				<script>
+					function downloadFlagfile(content, filename) {
+						const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+						const link = document.createElement("a");
+						link.href = URL.createObjectURL(blob);
+						link.download = filename || "osquery.flags";
+						document.body.appendChild(link);
+						link.click();
+						document.body.removeChild(link);
+						URL.revokeObjectURL(link.href);
+					}
+				</script>
 			}
 
 			<!-- Tasks Card -->
