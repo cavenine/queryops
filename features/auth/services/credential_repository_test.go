@@ -256,7 +256,7 @@ func TestCredentialRepository_CountByUserID(t *testing.T) {
 				if err := tdb.Pool.QueryRow(ctx, `INSERT INTO users (email, password_hash) VALUES ($1, $2) RETURNING id`, "count@example.com", "hash").Scan(&uid); err != nil {
 					t.Fatalf("insert user: %v", err)
 				}
-				for i := 0; i < 3; i++ {
+				for i := range 3 {
 					cred := webauthn.Credential{
 						ID:              []byte{byte('a' + i)},
 						PublicKey:       []byte("public-key"),

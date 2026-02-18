@@ -33,7 +33,6 @@ func TestSetupTestDB_ParallelReuse(t *testing.T) {
 	}
 
 	for i := range 3 {
-		i := i
 		t.Run(fmt.Sprintf("case_%d", i), func(t *testing.T) {
 			t.Parallel()
 
