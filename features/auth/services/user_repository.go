@@ -73,7 +73,7 @@ func (r *UserRepository) GetByEmail(ctx context.Context, email string) (*User, e
 	row := r.pool.QueryRow(ctx, `
 		SELECT id, email, password_hash
 		FROM users
-		WHERE email = $1
+		WHERE lower(email) = lower($1)
 	`, email)
 
 	user := &User{}
@@ -132,7 +132,7 @@ func (r *UserRepository) Create(ctx context.Context, email, passwordHash string)
 func (r *UserRepository) EmailExists(ctx context.Context, email string) (bool, error) {
 	var exists bool
 	err := r.pool.QueryRow(ctx, `
-		SELECT EXISTS(SELECT 1 FROM users WHERE email = $1)
+		SELECT EXISTS(SELECT 1 FROM users WHERE lower(email) = lower($1))
 	`, email).Scan(&exists)
 
 	if err != nil {

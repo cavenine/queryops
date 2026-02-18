@@ -32,6 +32,11 @@ func TestUserRepository_GetByEmail(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name:    "found case insensitive",
+			email:   "TEST@EXAMPLE.COM",
+			wantErr: false,
+		},
+		{
 			name:    "not found",
 			email:   "notfound@example.com",
 			wantErr: true,
@@ -51,8 +56,8 @@ func TestUserRepository_GetByEmail(t *testing.T) {
 				}
 				return
 			}
-			if user.Email != tt.email {
-				t.Fatalf("Email = %q, want %q", user.Email, tt.email)
+			if user.Email != "test@example.com" {
+				t.Fatalf("Email = %q, want %q", user.Email, "test@example.com")
 			}
 		})
 	}
@@ -133,12 +138,23 @@ func TestUserRepository_Create(t *testing.T) {
 			wantErr:      true,
 			errContains:  "email already registered",
 		},
+		{
+			name:         "duplicate email different case",
+			email:        "DUPLICATE@EXAMPLE.COM",
+			passwordHash: "hash",
+			wantErr:      true,
+			errContains:  "email already registered",
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if tt.name == "duplicate email" {
-				if _, err := tdb.Pool.Exec(ctx, `INSERT INTO users (email, password_hash) VALUES ($1, $2)`, tt.email, tt.passwordHash); err != nil {
+			if _, err := tdb.Pool.Exec(ctx, `TRUNCATE TABLE users RESTART IDENTITY CASCADE`); err != nil {
+				t.Fatalf("truncate users: %v", err)
+			}
+
+			if tt.name == "duplicate email" || tt.name == "duplicate email different case" {
+				if _, err := tdb.Pool.Exec(ctx, `INSERT INTO users (email, password_hash) VALUES ($1, $2)`, "duplicate@example.com", tt.passwordHash); err != nil {
 					t.Fatalf("seed user: %v", err)
 				}
 			}
@@ -184,6 +200,11 @@ func TestUserRepository_EmailExists(t *testing.T) {
 			name:  "not exists",
 			email: "notexists@example.com",
 			want:  false,
+		},
+		{
+			name:  "exists case insensitive",
+			email: "EXISTS@EXAMPLE.COM",
+			want:  true,
 		},
 	}
 

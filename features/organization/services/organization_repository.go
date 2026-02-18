@@ -44,7 +44,9 @@ func NewOrganizationRepository(pool *pgxpool.Pool) *OrganizationRepository {
 }
 
 func (r *OrganizationRepository) Create(ctx context.Context, name string, ownerID int) (*Organization, error) {
-	tx, err := r.pool.Begin(ctx)
+	tx, err := r.pool.BeginTx(ctx, pgx.TxOptions{
+		IsoLevel: pgx.ReadCommitted,
+	})
 	if err != nil {
 		return nil, fmt.Errorf("starting transaction: %w", err)
 	}
@@ -126,7 +128,9 @@ func (r *OrganizationRepository) GetUserOrganizations(ctx context.Context, userI
 }
 
 func (r *OrganizationRepository) AddEnrollSecret(ctx context.Context, organizationID uuid.UUID, secret string) error {
-	tx, err := r.pool.Begin(ctx)
+	tx, err := r.pool.BeginTx(ctx, pgx.TxOptions{
+		IsoLevel: pgx.ReadCommitted,
+	})
 	if err != nil {
 		return fmt.Errorf("starting transaction: %w", err)
 	}
