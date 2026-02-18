@@ -33,6 +33,7 @@ func TestSetupTestDB_ParallelReuse(t *testing.T) {
 	}
 
 	for i := range 3 {
+		i := i
 		t.Run(fmt.Sprintf("case_%d", i), func(t *testing.T) {
 			t.Parallel()
 
@@ -41,7 +42,7 @@ func TestSetupTestDB_ParallelReuse(t *testing.T) {
 				return
 			}
 
-			ctx, cancel := queryTimeoutContext(t, 5*time.Second)
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			defer cancel()
 
 			var got int
@@ -53,18 +54,6 @@ func TestSetupTestDB_ParallelReuse(t *testing.T) {
 			}
 		})
 	}
-}
-
-func queryTimeoutContext(t *testing.T, d time.Duration) (context.Context, context.CancelFunc) {
-	t.Helper()
-
-	if deadline, ok := t.Deadline(); ok {
-		remaining := time.Until(deadline)
-		if remaining < d {
-			return context.WithTimeout(context.Background(), remaining)
-		}
-	}
-	return context.WithTimeout(context.Background(), d)
 }
 
 func TestSetupTestDB_IsolationBetweenDatabases(t *testing.T) {

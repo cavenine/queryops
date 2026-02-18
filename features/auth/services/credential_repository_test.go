@@ -15,7 +15,11 @@ import (
 func TestCredentialRepository_Create(t *testing.T) {
 	tdb := testdb.SetupTestDB(t)
 	ctx := context.Background()
-	userID := insertTestUser(t, tdb, ctx, "test@example.com")
+
+	var userID int
+	if err := tdb.Pool.QueryRow(ctx, `INSERT INTO users (email, password_hash) VALUES ($1, $2) RETURNING id`, "test@example.com", "hash").Scan(&userID); err != nil {
+		t.Fatalf("insert user: %v", err)
+	}
 
 	repo := services.NewCredentialRepository(tdb.Pool)
 
@@ -53,7 +57,11 @@ func TestCredentialRepository_Create(t *testing.T) {
 func TestCredentialRepository_GetByUserID(t *testing.T) {
 	tdb := testdb.SetupTestDB(t)
 	ctx := context.Background()
-	userID := insertTestUser(t, tdb, ctx, "test@example.com")
+
+	var userID int
+	if err := tdb.Pool.QueryRow(ctx, `INSERT INTO users (email, password_hash) VALUES ($1, $2) RETURNING id`, "test@example.com", "hash").Scan(&userID); err != nil {
+		t.Fatalf("insert user: %v", err)
+	}
 
 	repo := services.NewCredentialRepository(tdb.Pool)
 
@@ -100,7 +108,11 @@ func TestCredentialRepository_GetByUserID(t *testing.T) {
 func TestCredentialRepository_GetByCredentialID(t *testing.T) {
 	tdb := testdb.SetupTestDB(t)
 	ctx := context.Background()
-	userID := insertTestUser(t, tdb, ctx, "test@example.com")
+
+	var userID int
+	if err := tdb.Pool.QueryRow(ctx, `INSERT INTO users (email, password_hash) VALUES ($1, $2) RETURNING id`, "test@example.com", "hash").Scan(&userID); err != nil {
+		t.Fatalf("insert user: %v", err)
+	}
 
 	repo := services.NewCredentialRepository(tdb.Pool)
 
@@ -173,7 +185,11 @@ func TestCredentialRepository_GetByCredentialID(t *testing.T) {
 func TestCredentialRepository_UpdateSignCount(t *testing.T) {
 	tdb := testdb.SetupTestDB(t)
 	ctx := context.Background()
-	userID := insertTestUser(t, tdb, ctx, "test@example.com")
+
+	var userID int
+	if err := tdb.Pool.QueryRow(ctx, `INSERT INTO users (email, password_hash) VALUES ($1, $2) RETURNING id`, "test@example.com", "hash").Scan(&userID); err != nil {
+		t.Fatalf("insert user: %v", err)
+	}
 
 	repo := services.NewCredentialRepository(tdb.Pool)
 
@@ -236,8 +252,11 @@ func TestCredentialRepository_CountByUserID(t *testing.T) {
 		{
 			name: "three credentials",
 			setup: func() int {
-				uid := insertTestUser(t, tdb, ctx, "count@example.com")
-				for i := range 3 {
+				var uid int
+				if err := tdb.Pool.QueryRow(ctx, `INSERT INTO users (email, password_hash) VALUES ($1, $2) RETURNING id`, "count@example.com", "hash").Scan(&uid); err != nil {
+					t.Fatalf("insert user: %v", err)
+				}
+				for i := 0; i < 3; i++ {
 					cred := webauthn.Credential{
 						ID:              []byte{byte('a' + i)},
 						PublicKey:       []byte("public-key"),
@@ -275,7 +294,11 @@ func TestCredentialRepository_CountByUserID(t *testing.T) {
 func TestCredentialRepository_GetPasskeysByUserID(t *testing.T) {
 	tdb := testdb.SetupTestDB(t)
 	ctx := context.Background()
-	userID := insertTestUser(t, tdb, ctx, "test@example.com")
+
+	var userID int
+	if err := tdb.Pool.QueryRow(ctx, `INSERT INTO users (email, password_hash) VALUES ($1, $2) RETURNING id`, "test@example.com", "hash").Scan(&userID); err != nil {
+		t.Fatalf("insert user: %v", err)
+	}
 
 	repo := services.NewCredentialRepository(tdb.Pool)
 
@@ -310,7 +333,11 @@ func TestCredentialRepository_GetPasskeysByUserID(t *testing.T) {
 func TestCredentialRepository_UpdateNickname(t *testing.T) {
 	tdb := testdb.SetupTestDB(t)
 	ctx := context.Background()
-	userID := insertTestUser(t, tdb, ctx, "test@example.com")
+
+	var userID int
+	if err := tdb.Pool.QueryRow(ctx, `INSERT INTO users (email, password_hash) VALUES ($1, $2) RETURNING id`, "test@example.com", "hash").Scan(&userID); err != nil {
+		t.Fatalf("insert user: %v", err)
+	}
 
 	repo := services.NewCredentialRepository(tdb.Pool)
 
@@ -343,7 +370,11 @@ func TestCredentialRepository_UpdateNickname(t *testing.T) {
 func TestCredentialRepository_DeleteByUserAndID(t *testing.T) {
 	tdb := testdb.SetupTestDB(t)
 	ctx := context.Background()
-	userID := insertTestUser(t, tdb, ctx, "test@example.com")
+
+	var userID int
+	if err := tdb.Pool.QueryRow(ctx, `INSERT INTO users (email, password_hash) VALUES ($1, $2) RETURNING id`, "test@example.com", "hash").Scan(&userID); err != nil {
+		t.Fatalf("insert user: %v", err)
+	}
 
 	repo := services.NewCredentialRepository(tdb.Pool)
 
@@ -413,14 +444,4 @@ func TestCredentialRepository_DeleteByUserAndID(t *testing.T) {
 			}
 		})
 	}
-}
-
-func insertTestUser(t *testing.T, tdb *testdb.TestDB, ctx context.Context, email string) int {
-	t.Helper()
-
-	var userID int
-	if err := tdb.Pool.QueryRow(ctx, `INSERT INTO users (email, password_hash) VALUES ($1, $2) RETURNING id`, email, "hash").Scan(&userID); err != nil {
-		t.Fatalf("insert user: %v", err)
-	}
-	return userID
 }
