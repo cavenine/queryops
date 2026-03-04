@@ -29,6 +29,13 @@ type Config struct {
 	DatabaseMaxConns  int32  `mapstructure:"DATABASE_MAX_CONNS"`
 	DatabaseMaxIdle   int32  `mapstructure:"DATABASE_MAX_IDLE"`
 	DatabaseMaxLifeMs int64  `mapstructure:"DATABASE_MAX_LIFE_MS"`
+	// Deprecated: use DatabaseMaxIdleMs.
+	DatabaseMaxIdleMs int64 `mapstructure:"DATABASE_MAX_CONN_IDLE_MS"`
+	// Prefer DatabaseMaxConnLifeMs, but keep DatabaseMaxLifeMs for compatibility.
+	DatabaseMaxConnLifeMs      int64  `mapstructure:"DATABASE_MAX_CONN_LIFE_MS"`
+	DatabaseStatementTimeoutMs int64  `mapstructure:"DATABASE_STATEMENT_TIMEOUT_MS"`
+	DatabaseIdleInTxTimeoutMs  int64  `mapstructure:"DATABASE_IDLE_IN_TX_TIMEOUT_MS"`
+	DatabaseAppName            string `mapstructure:"DATABASE_APP_NAME"`
 
 	AutoMigrate          bool `mapstructure:"AUTO_MIGRATE"`
 	BackgroundProcessing bool `mapstructure:"BACKGROUND_PROCESSING"`
@@ -71,6 +78,9 @@ func loadBase() *Config {
 	v.SetDefault("LOG_LEVEL", "INFO")
 	v.SetDefault("SESSION_SECRET", "session-secret")
 	v.SetDefault("DATABASE_URL", "postgres://queryops:queryops@localhost:5432/queryops?sslmode=disable")
+	v.SetDefault("DATABASE_APP_NAME", "queryops")
+	v.SetDefault("DATABASE_STATEMENT_TIMEOUT_MS", 15000)
+	v.SetDefault("DATABASE_IDLE_IN_TX_TIMEOUT_MS", 10000)
 	v.SetDefault("AUTO_MIGRATE", true)
 	v.SetDefault("BACKGROUND_PROCESSING", true)
 	v.SetDefault("OSQUERY_ENROLL_SECRET", "enrollment-secret")

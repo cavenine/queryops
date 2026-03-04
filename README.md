@@ -37,6 +37,24 @@ go tool task run
 
 Navigate to [`http://localhost:8080`](http://localhost:8080) in your favorite web browser
 
+# PostgreSQL Configuration
+
+`DATABASE_URL` is required for app and migration commands. Optional tuning env vars:
+
+- `DATABASE_MIN_CONNS` and `DATABASE_MAX_CONNS`: pgx pool bounds.
+- `DATABASE_MAX_CONN_IDLE_MS`: max idle connection lifetime in milliseconds.
+- `DATABASE_MAX_CONN_LIFE_MS`: max total connection lifetime in milliseconds.
+- `DATABASE_STATEMENT_TIMEOUT_MS`: per-statement timeout in milliseconds (default `15000`).
+- `DATABASE_IDLE_IN_TX_TIMEOUT_MS`: idle-in-transaction timeout in milliseconds (default `10000`).
+- `DATABASE_APP_NAME`: PostgreSQL `application_name` (default `queryops`).
+
+Compatibility notes:
+
+- `DATABASE_MAX_IDLE` is deprecated and only used as a fallback for `DATABASE_MAX_CONN_IDLE_MS`.
+- `DATABASE_MAX_LIFE_MS` remains supported as fallback for `DATABASE_MAX_CONN_LIFE_MS`.
+
+User emails are enforced as case-insensitive unique at the database level.
+
 # Deployment
 
 ## Building an Executable

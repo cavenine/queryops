@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
@@ -60,46 +61,67 @@ func (r *HostRepository) Enroll(ctx context.Context, hostIdentifier string, host
 }
 
 func (r *HostRepository) GetByNodeKey(ctx context.Context, nodeKey string) (*Host, error) {
-	return r.getBy(ctx, "node_key", nodeKey)
-}
-
-func (r *HostRepository) GetByID(ctx context.Context, id uuid.UUID) (*Host, error) {
-	return r.getBy(ctx, "id", id)
-}
-
-func (r *HostRepository) getBy(ctx context.Context, column string, value any) (*Host, error) {
 	var h Host
-	query := fmt.Sprintf(`
+	err := r.pool.QueryRow(ctx, `
 		SELECT id, organization_id, host_identifier, node_key, os_version, osquery_info, system_info, platform_info,
 		       last_enrollment_at, last_config_at, last_logger_at, last_distributed_at, created_at, updated_at
-		FROM hosts WHERE %s = $1
-	`, column)
-	err := r.pool.QueryRow(ctx, query, value).Scan(
+		FROM hosts
+		WHERE node_key = $1
+	`, nodeKey).Scan(
 		&h.ID, &h.OrganizationID, &h.HostIdentifier, &h.NodeKey, &h.OSVersion, &h.OsqueryInfo, &h.SystemInfo, &h.PlatformInfo,
 		&h.LastEnrollmentAt, &h.LastConfigAt, &h.LastLoggerAt, &h.LastDistributedAt, &h.CreatedAt, &h.UpdatedAt,
 	)
 	if err != nil {
-		if err == pgx.ErrNoRows {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, nil
 		}
-		return nil, fmt.Errorf("getting host by %s: %w", column, err)
+		return nil, fmt.Errorf("getting host by node key: %w", err)
+	}
+	return &h, nil
+}
+
+func (r *HostRepository) GetByID(ctx context.Context, id uuid.UUID) (*Host, error) {
+	var h Host
+	err := r.pool.QueryRow(ctx, `
+		SELECT id, organization_id, host_identifier, node_key, os_version, osquery_info, system_info, platform_info,
+		       last_enrollment_at, last_config_at, last_logger_at, last_distributed_at, created_at, updated_at
+		FROM hosts
+		WHERE id = $1
+	`, id).Scan(
+		&h.ID, &h.OrganizationID, &h.HostIdentifier, &h.NodeKey, &h.OSVersion, &h.OsqueryInfo, &h.SystemInfo, &h.PlatformInfo,
+		&h.LastEnrollmentAt, &h.LastConfigAt, &h.LastLoggerAt, &h.LastDistributedAt, &h.CreatedAt, &h.UpdatedAt,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("getting host by id: %w", err)
 	}
 	return &h, nil
 }
 
 func (r *HostRepository) UpdateLastConfig(ctx context.Context, nodeKey string) error {
 	_, err := r.pool.Exec(ctx, `UPDATE hosts SET last_config_at = NOW(), updated_at = NOW() WHERE node_key = $1`, nodeKey)
-	return err
+	if err != nil {
+		return fmt.Errorf("updating host last config timestamp: %w", err)
+	}
+	return nil
 }
 
 func (r *HostRepository) UpdateLastLogger(ctx context.Context, nodeKey string) error {
 	_, err := r.pool.Exec(ctx, `UPDATE hosts SET last_logger_at = NOW(), updated_at = NOW() WHERE node_key = $1`, nodeKey)
-	return err
+	if err != nil {
+		return fmt.Errorf("updating host last logger timestamp: %w", err)
+	}
+	return nil
 }
 
 func (r *HostRepository) UpdateLastDistributed(ctx context.Context, nodeKey string) error {
 	_, err := r.pool.Exec(ctx, `UPDATE hosts SET last_distributed_at = NOW(), updated_at = NOW() WHERE node_key = $1`, nodeKey)
-	return err
+	if err != nil {
+		return fmt.Errorf("updating host last distributed timestamp: %w", err)
+	}
+	return nil
 }
 
 func (r *HostRepository) List(ctx context.Context) ([]*Host, error) {
@@ -208,15 +230,15 @@ func (r *HostRepository) GetConfigForHost(ctx context.Context, nodeKey string) (
 		WHERE h.node_key = $1
 	`, nodeKey).Scan(&config)
 	if err != nil {
-		if err == pgx.ErrNoRows {
+		if errors.Is(err, pgx.ErrNoRows) {
 			// Return default config
 			err = r.pool.QueryRow(ctx, `SELECT config FROM osquery_configs WHERE name = 'default'`).Scan(&config)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("getting default config for host: %w", err)
 			}
 			return config, nil
 		}
-		return nil, err
+		return nil, fmt.Errorf("getting host-specific config: %w", err)
 	}
 	return config, nil
 }
@@ -270,7 +292,9 @@ func (r *HostRepository) SaveQueryResults(ctx context.Context, hostID uuid.UUID,
 	// In the campaign-based design, queryID is the campaign ID.
 	campaignID := queryID
 
-	tx, err := r.pool.Begin(ctx)
+	tx, err := r.pool.BeginTx(ctx, pgx.TxOptions{
+		IsoLevel: pgx.ReadCommitted,
+	})
 	if err != nil {
 		return fmt.Errorf("saving query results: begin transaction: %w", err)
 	}
@@ -346,7 +370,7 @@ func (r *HostRepository) GetRecentResults(ctx context.Context, hostID uuid.UUID)
 		LIMIT 10
 	`, hostID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("getting recent results: %w", err)
 	}
 	defer rows.Close()
 
@@ -377,9 +401,11 @@ func (r *HostRepository) QueueQuery(
 		return uuid.Nil, fmt.Errorf("queue query: no target hosts")
 	}
 
-	tx, err := r.pool.Begin(ctx)
+	tx, err := r.pool.BeginTx(ctx, pgx.TxOptions{
+		IsoLevel: pgx.ReadCommitted,
+	})
 	if err != nil {
-		return uuid.Nil, err
+		return uuid.Nil, fmt.Errorf("queue query: begin transaction: %w", err)
 	}
 	defer tx.Rollback(ctx)
 
@@ -401,7 +427,7 @@ func (r *HostRepository) QueueQuery(
 		RETURNING id
 	`, organizationID, name, description, query, createdBy, len(hostIDs)).Scan(&campaignID)
 	if err != nil {
-		return uuid.Nil, err
+		return uuid.Nil, fmt.Errorf("queue query: inserting campaign: %w", err)
 	}
 
 	for _, hostID := range hostIDs {
@@ -410,9 +436,12 @@ func (r *HostRepository) QueueQuery(
 			VALUES ($1, $2)
 		`, campaignID, hostID)
 		if err != nil {
-			return uuid.Nil, err
+			return uuid.Nil, fmt.Errorf("queue query: inserting campaign target for host %s: %w", hostID, err)
 		}
 	}
 
-	return campaignID, tx.Commit(ctx)
+	if err := tx.Commit(ctx); err != nil {
+		return uuid.Nil, fmt.Errorf("queue query: commit transaction: %w", err)
+	}
+	return campaignID, nil
 }

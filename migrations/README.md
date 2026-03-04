@@ -76,3 +76,4 @@ Notes:
 
 - Migration tasks use the same `DATABASE_URL` as the app, and it must use the `postgres://` URL scheme.
 - In development, you can optionally enable automatic migrations on web startup via the `AUTO_MIGRATE=true` environment variable.
+- Auth schema note: `users.email` uniqueness is case-insensitive (`UNIQUE INDEX` on `lower(email)`).
